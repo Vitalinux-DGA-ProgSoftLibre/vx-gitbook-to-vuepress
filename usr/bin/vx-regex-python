@@ -1,0 +1,138 @@
+#!/usr/bin/python3
+
+import re
+import os
+import sys
+
+
+def salir_error(otro_texto):
+    texto = "¡¡Error!! El script requiere al menos 1 parámetros:\n"
+    texto += "1) Fichero 2) Patron/Regex a buscar 3) Valor de sustitución\n"
+    texto += "Ej. vx-regex-sustitucion '/ruta/fichero' '/n#.*/n' '/n' (Elimina Comentarios)\n"
+    texto += "Si se añade al final '--save' se guardará la sustitución in-place en el archivo indicado"
+    if (otro_texto != ""):
+        texto += "\n" + otro_texto
+    print(texto)
+    os._exit(1)
+
+
+# En el número de argumentos hay que tener en cuenta que sys.argv[0] es el nombre del script:
+try:
+    if len(sys.argv) < 1:
+        salir_error("")
+except:
+    salir_error("")
+
+mifile = sys.argv[1]
+try:
+    fichero = open(mifile)
+    contenido = fichero.read()
+except:
+    mensaje = "=> El archivo indicado como parámetro no existe: " + mifile
+    salir_error(mensaje)
+    os._exit(1)
+
+# Eliminamos líneas en blanco:
+# with open('path/to/file') as infile, open('output.txt', 'w') as outfile:
+#     for line in infile:
+#         if not line.strip():
+#             continue  # skip the empty line
+#         outfile.write(line)
+lista = ['^\s*\n:', '\n\s*\n:\n', '\n\s*$:']
+for operacion in lista:
+    regex = operacion.split(":")[0]
+    sustitucion = operacion.split(":")[1]
+    contenido = re.sub(regex, sustitucion, contenido)
+# print(contenido)
+# print("--- Terminado ---")
+# os._exit(0)
+regex = '#+[^#]*'
+# trozos = re.split(regex, contenido)
+trozos = re.findall(regex, contenido)
+ntrozos = len(trozos)
+
+for ntrozo in range(0, ntrozos):
+    encontrado = False
+    regex = ' +\* +\[.*?\]\(.*?\)'
+    trozos2 = re.findall(regex, trozos[ntrozo])
+    ntrozos2 = len(trozos2)
+    for ntrozo2 in range(0, ntrozos2):
+        regex = ' +\* +\[(.*?)\]\(.*?\)'
+        titulo_search = re.search(regex, trozos2[ntrozo2])
+        regex = ' +\* +\[.*?\]\((.*?)\)'
+        ruta_search = re.search(regex, trozos2[ntrozo2])
+        if titulo_search and ruta_search:
+            titulo = titulo_search.group(1)
+            ruta = ruta_search.group(1)
+            encontrado = True
+        if encontrado:
+            regex = ' +\* +\[' + titulo + '\]\(' + ruta + '\)'
+            sustitucion = '---[\"' + ruta + '\",\"' + titulo + '\"],---'
+            trozos[ntrozo] = re.sub(regex, sustitucion, trozos[ntrozo])
+        else:
+            sustitucion = ';;;'
+        # trozos2[ntrozo2] = re.sub(regex, sustitucion, trozos2[ntrozo2])
+
+# for trozo in trozos:
+#     print("=> " + trozo)
+# Convertimos la lista de trozos en una cadena y la mostramos:
+resultado = ''.join(trozos)
+regex = ',---\n---'
+sustitucion = ',\n'
+resultado = re.sub(regex, sustitucion, resultado)
+regex = '---(?P<trozo>\[(.|\n)*?\]),---'
+sustitucion = '{\n\ttitle: "",\n\tcollapsable: false,\n\tchildren: [\n\t\t\g<1>\n\t]\n},'
+resultado = re.sub(regex, sustitucion, resultado)
+
+# Titulos de primer nivel:
+regex = '\n\* *\[(.*?)\]\((.*?)\)'
+sustitucion = '\n[\"\g<2>\",\"\g<1>\"],'
+resultado = re.sub(regex, sustitucion, resultado)
+
+# Terminamos con los títulos principales:
+# regex = '# *[Ss][Uu][Mm][Mm][Aa][Rr][Yy]\s*?(.*?)##'
+regex = '# *[Ss][Uu][Mm][Mm][Aa][Rr][Yy]\s*([^#]*)'
+sustitucion = '{\n\ttitle: "Índice de Contenidos",\n\tcollapsable: false,\n\tsidebarDepth: 0,\n\tchildren: [\n\t\t\g<1>\t]\n},\n'
+resultado = re.sub(regex, sustitucion, resultado)
+regex = 'README'
+sustitucion = '/'
+resultado = re.sub(regex, sustitucion, resultado)
+regex = '\.md'
+sustitucion = ''
+resultado = re.sub(regex, sustitucion, resultado)
+
+regex = '##\s+(.*?)\n+?([^#]*)'
+sustitucion = '{\n\ttitle: "\g<1>",\n\tcollapsable: false,\n\tchildren: [\n\t\t\g<2>\t]\n},\n'
+# sustitucion = '---\g<2>---'
+resultado = re.sub(regex, sustitucion, resultado)
+print(resultado)
+
+os._exit(0)
+
+
+for ntrozo in range(0, ntrozos):
+    # print("=> " + trozos[ntrozo])
+    regex = '\n +\*[ \t\r\f\v\n]+\[(.+?)\]\(.+?\)'
+    titulo = str(re.search(regex, trozos[ntrozo]).group(1))
+    regex = '\s+\*\s+\[.+?\]\((.+?)\)'
+    ruta = str(re.search(regex, trozos[ntrozo]).group(1))
+    regex = str("\s+\*\s+\[" + str(titulo) + "\]\(" + str(ruta) + "\)")
+    sustitucion = str("--" + titulo + "---" + ruta + "---")
+    print("regex: " + regex + "\nsustitucion: " + sustitucion)
+    if re.search(regex, sustitucion):
+        trozos[ntrozo] = re.sub(regex, sustitucion, trozos[ntrozo])
+    else:
+        print("No hay sustitucion!!")
+
+for trozo in trozos:
+    print("=> " + trozo)
+
+# {
+#     title: "",
+#     collapsable: false,
+#     children: [
+#         ["/content/index0/la-comunicacion", "1.1.-La comunicación"],
+#         ["/content/index0/interactividad", "1.2 Interactividad"],
+#         ["/content/_cuando_escribas", "1.3 ... cuando escribas"],
+#     ],
+# },

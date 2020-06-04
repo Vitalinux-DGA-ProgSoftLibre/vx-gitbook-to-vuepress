@@ -1,0 +1,126 @@
+#!/bin/bash
+
+# Dependencias de pdflatex:
+# sudo apt-get install texlive-latex-base \
+# texlive-fonts-recommended texlive-fonts-extra texlive-latex-extra
+
+# Opcion 1:
+# sudo apt install grip wkhtmltopdf
+# MD=${1:-README.md}
+# PDF=${2:-"$MD".pdf}
+# PORT=8971
+# DELAY=10
+
+# printf "Converting $MD to $PDF on port $PORT\n"
+# printf "Waiting $DELAY seconds for server to start...\n"
+
+# grip "$MD" localhost:$PORT &
+# sleep $DELAY
+# wkhtmltopdf http://localhost:$PORT "$PDF"
+# kill $(ps -eo pid,command | grep grip | grep -v grep | awk '{print $1}')
+
+# Opción 2:
+# Buscamos los archivos md y le quitamos la extensión .md, para obtener una lista de ficheros:
+
+uso() {
+    echo -e "=> El script esta pensado para diversas opciones:
+    1) Le podemos pasar un SUMMARY.md con el orden y ficheros que forman el libro
+    p.e. vx-vuepress-to-pdf --summary <ruta/SUMMARY.md> \"Titulo_Ebook\"
+    2) Le podemos pasar un directorio donde se localizan todos los markdown a convertir:
+    p.e. vx-vuepress-to-pdf --dir <ruta_dir_ficheros_md> \"Titulo_Ebook\"
+    ¡¡Importante!! Si no se indica Titulo para el Ebook éste será: \"OpenBooks CATEDU\"
+    "
+}
+
+if (( ${#} < 2 )) || [[ "${1}" != "--summary" && "${1}" != "--dir" ]] ; then
+    uso && exit 1
+fi
+
+# Rescatamos el título indicado como 3er parámetro:
+TITULO="${3:-"OpenBooks CATEDU"}"
+FICHNAME="${TITULO// /_}"
+
+vx-crear-resultante-from-summary() {
+    SAVEIFS=$IFS   # Save current IFS
+    IFS=$'\n'      # Change IFS to new line
+    FICHEROS=($(cat "${SUMMARY}" | sed "/^$/d" | sed "s/.*(\(.*\)).*/\1/g" | sed -n '/.*\.md/p'))
+    echo -n "" > "${RESULTANTE}"
+    for FICHERO in "${FICHEROS[@]}" ; do
+        cat "${DIRBASE}/${FICHERO}" >> "${RESULTANTE}"
+    done
+    IFS=$SAVEIFS
+}
+
+vx-crear-resultante-from-dir() {
+    SAVEIFS=$IFS   # Save current IFS
+    IFS=$'\n'      # Change IFS to new line
+    echo "=> ¡¡Ok!! Buscaremos los markdows que hay en: ${DIRBASE}"
+    # FICHEROS=($(find "${RUTA_MARKDOWNS}" -name "*.md$" 2> /dev/null | sed -e 's/\.md$//'))
+    FICHEROS=($(find "${DIRBASE}" -regex ".*\.md$" 2> /dev/null))
+    # Concatenamos los archivos markdown y luego los convertiremos html y pdf:
+    echo -n "" > "${RESULTANTE}"
+    for FICHERO in "${FICHEROS[@]}" ; do
+        cat "${FICHERO}" >> "${RESULTANTE}"
+    done
+    IFS=$SAVEIFS
+}
+
+if [[ "${1}" == "--dir" ]]  ; then
+    [[ -d "${2}" ]] && {
+        DIR="${2}"
+        DIRBASE="${2}"
+        RESULTANTE="${DIRBASE}/${FICHNAME}.md"
+        vx-crear-resultante-from-dir ;
+    } || \
+    {
+        echo "=> Problemas para inspeccionar el directorio: ${DIR}"
+        exit 1
+    }
+fi
+
+if [[ "${1}" == "--summary" ]]  ; then
+    [[ -f "${2}" ]] && {
+        SUMMARY="${2}"
+        DIRBASE="$(dirname "${2}")"
+        RESULTANTE="${DIRBASE}/${FICHNAME}.md"
+        vx-crear-resultante-from-summary ;
+    } || \
+    {
+        echo "=> Problemas para inspeccionar el SUMMARY: ${SUMMARY}"
+        exit 1
+    }
+fi
+
+# Corregimos las rutas de las imágenes del markdown resultante:
+# "![${TEXTO_ALTERNATIVO}](~@${DIRBASE}/${IMAGEN})"
+sed -i "s#\(.*\!\[[^]]*\](\)~@\(.*\)#\1./\2#g" "${RESULTANTE}"
+
+echo "Hecho en Markdown Total: ${RESULTANTE}"
+
+# Una vez concatenados los archivos markdown los convertimos en html y pdf:
+echo "Conversión: ${RESULTANTE} => ${FICHNAME}.html => ${FICHNAME}.pdf"
+grip "${RESULTANTE}" --export "${DIRBASE}/${FICHNAME}.html"
+sed -i "s#<title>.*</title>#<title>${TITULO}</title>#" "${DIRBASE}/${FICHNAME}.html"
+# Eliminamos el título <h3> inicial que introduce grip y que falsea el TOC resultante del pandoc:
+# vx-regex-sustitucion "${FICHERO}.html" '<h3>(.|\n)* - Grip(.|\n)*</h3>' "<h3>${TITULO}</h3>"
+vx-regex-sustitucion "${DIRBASE}/${FICHNAME}.html" '<h3>(.|\n)*? - Grip(.|\n)*?</h3>' "" --save
+
+echo "Hecho el HTML Total: ${DIRBASE}/${FICHNAME}.html"
+
+# apt install pandoc texlive-xetex
+# Variables de Latex: https://pandoc.org/MANUAL.html#variables-for-latex
+# Plantilla de Latex: https://pandoc.org/demo/template.tex
+# https://github.com/jgm/pandoc/wiki/User-contributed-templates
+# pandoc -f html -t latex --pdf-engine=xelatex "${FICHNAME}.html" --toc -o "${FICHNAME}.pdf"
+# Si añadimos la opción "-N" a pandoc nos autogenera numeración en las secciones: 1, 1.1, 1.2, ...
+cd "${DIRBASE}"
+pandoc --template=template.tex \
+--variable margin-left=2cm \
+--variable margin-right=2cm \
+--variable fontsize=12pt \
+--variable colorlinks="blue" \
+-f html -t latex --pdf-engine=xelatex \
+"${FICHNAME}.html" --toc -o "${FICHNAME}.pdf"
+
+echo "=> ¡¡Ya se ha generado el PDF!! \"${DIRBASE}/${FICHNAME}.pdf\""
+exit 0

@@ -1,0 +1,6 @@
+vx-gitbook-to-vuepress (1.0-1) unstable; urgency=low
+
+  * Paquete encargado de pasar los cursos de GitBook de Catedu a Vuepress
+  * Añadido vx-gitbook-vuepress
+
+ -- Arturo Martín <amartinromero@gmail.com>  Thu, 4 Jun 2020 00:10:00 +0200

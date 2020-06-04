@@ -1,0 +1,17 @@
+Source: vx-gitbook-to-vuepress
+Section: utils
+Priority: extra
+Maintainer: Arturo Martín Romero <amartinromero@gmail.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.7
+Homepage: http://wiki.vitalinux.educa.aragon.es
+
+Package: vx-gitbook-to-vuepress
+Architecture: all
+Depends: ${misc:Depends}, 
+Description: Convert GitBook to Vuepress
+ Paquete creado de pasar los cursos de GitBook de Catedu a Vuepress
+ .
+ 1) Reemplaza los plugins de Gitbook
+ 2) Genera el archivo config.js a partir de book.json y SUMMARY.md
+ 3) Genera el sidebar a partir de SUMMARY.md

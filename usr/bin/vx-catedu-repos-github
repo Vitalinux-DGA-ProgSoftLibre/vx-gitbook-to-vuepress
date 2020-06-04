@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# URLs inportantes: API de github
+# https://developer.github.com/v3/
+
+# Posibles consultas interesantes:
+# curl -s "https://api.github.com/users/${USER}/repos?type=all&per_page=100" -H "Authorization: token ${AUTH}" | jq '. | length'
+# curl -X GET https://api.github.com/users/<myuser>/repos\?type=all
+
+
+for CONT in {1..10} ; do
+    curl "https://api.github.com/users/catedu/repos?per_page=100&page=1" | jq -r '.[] | .name' | wc -l
+done

@@ -1,0 +1,208 @@
+#!/bin/bash
+#
+# Uso: bash scripts/vx-convert-summary-to-config ../curso-de-tutores/SUMMARY.md
+
+[ -z "${1}" ] && \
+FICH="SUMMARY.md" || \
+FICH="${1}"
+# 1) Eliminamos la cabecera Summary y líneas en blanco
+# 2) Si la primera línea no es un título creamos una sección del sidebar
+# * [Introducción](README.md) =>
+# {
+# 	title:,
+# 	collapsable: false,
+# 	sidebarDepth: 0,children: [[2, 1]]
+# },
+sed -e /^$/d -e /^#.*Summary$/d "${FICH}" | \
+sed -e '1s/^\* \[\(.*\)\](\(.*\)\.md)/{\n\ttitle:"\1",\n\tcollapsable: false,\n\tsidebarDepth: 0,\n\tchildren: [["\2", "\1"]]\n},/' | \
+sed -e 's/^#\+ \(.*\)/{\n\ttitle: "\1",\n\tcollapsable: false,\n\tchildren: [/g' | \
+sed -e 's;^\* \[\(.*\)\](\(.*\)\.md);\t\t["/content/\2","\1"],;g' | \
+sed -e 's;^ \+\* \[\(.*\)\](\(.*\)\.md);\t\t["/content/\2","\1"],;g' > /tmp/aux
+vx-regex-sustitucion "/tmp/aux" '\],\n{' ']\n\t]\n},\n{' --save
+vx-regex-sustitucion "/tmp/aux" '\],$' ']\n\t]\n}' --save
+vx-regex-sustitucion "/tmp/aux" '(?P<g1>(.|\n)*)' 'sidebar: {\n"/": [\n\1]\n},'
+
+exit 0
+
+# Generamos el arhivo docs/.vuepress/config.js:
+FICHCONF="docs/.vuepress/config.js"
+echo 'const path = require("path");
+module.exports = {
+  title: "'${TITULO}'",
+  description: "Documentación creada con Vuepress: markdown, Js & Vue",
+  base: "/",
+  dest: "public",
+  port: 8000,
+  themeConfig: {
+    logo: "/logos/open-book-catedu.png",
+    searchPlaceholder: "Buscar",
+    lastUpdated: "Última Actualización",
+    repo: "'${GITREPO}'",
+    repoLabel: "Contribuye",
+    docsRepo: "'${GITREPO}'",
+    docsDir: "docs",
+    docsBranch: "master",
+    editLinks: true,
+    editLinkText: "Editar esta página en Github",
+    // Barra de navegación superior:
+    nav: [{
+        text: "Inicio",
+        link: "/",
+      },
+      {
+        text: "Enlaces",
+        items: [{
+            text: "Catedu",
+            link: "https://web.catedu.es/webcatedu/",
+          },
+          {
+            text: "GitHub",
+            link: "https://github.com/catedu",
+          },
+          {
+            text: "Aularagón",
+            link: "https://moodle.catedu.es/",
+          },
+          {
+            text: "Soporte",
+            link: "https://soportearagon.catedu.es/",
+          }
+        ],
+      },
+    ],
+    sidebar: {
+      "/": [
+        {
+          title: "Introducción",
+          collapsable: false,
+          sidebarDepth: 0,
+          children: [
+            ["README", "Introducción"]
+          ],
+        },
+        {
+          title: "1. Comunicación",
+          collapsable: false,
+          children: [
+            ["/content/index0", "1. Que no te falte estilo..."],
+            {
+              title: "",
+              collapsable: false,
+              children: [
+                ["/content/index0/la-comunicacion", "1.1.-La comunicación"],
+                ["/content/index0/interactividad", "1.2 Interactividad"],
+                ["/content/_cuando_escribas", "1.3 ... cuando escribas"],
+              ],
+            },
+          ],
+        },
+        {
+          title: "2. Te presento nuestro Moodle",
+          collapsable: false,
+          children: [
+            ["/content/index1", "Bienvenidos a nuestro Moodle"],
+            [
+              "/content/1_entrar_en_la_plataforma",
+              "2.1. Entrar en la plataforma",
+            ],
+            ["/content/2_mi_perfil", "2.2. Mi perfil"],
+            ["/content/3_mensajera", "2.3. Mensajerí­a"],
+            ["/content/4_ojo_con_la_evaluacin", "2.4.- Ojo con la evaluación"],
+            [
+              "/content/41_dnde_estn_las_entregas",
+              "2.4.1. Dónde están las entregas",
+            ],
+            ["/content/42_evaluar_las_entregas", "2.4.2. Evaluar las entregas"],
+          ],
+        },
+        {
+          title: "3. ¡El deber nos llama!",
+          collapsable: false,
+          children: [
+            ["/content/index2", "¡El deber nos llama!"],
+            [
+              "/content/1_obligaciones_del_tutor",
+              "3.1. Obligaciones del tutor",
+            ],
+            [
+              "/content/2_evaluacin_de_las_entregas",
+              "3.2. Evaluación de las entregas",
+            ],
+            ["/content/3_foros", "3.3. Foros"],
+            ["/content/4_temporizacin", "3.4. Temporización"],
+            ["/content/5_evaluacin_final", "3.5. Evaluación final"],
+            [
+              "/content/barra_de_progreso_de_completado",
+              "Barra de Progreso de Completado.",
+            ],
+            ["/content/6_rbricas", "3.6. Rúbricas"],
+            ["/content/7_nominilla", "3.7. Nominilla"],
+            ["/content/8_certificados", "3.8. Certificados"],
+            ["/content/9_legislacin", "3.9. Legislación"],
+            [
+              "/content/10_tu_evaluacin_y_la_nuestra",
+              "3.10. Tu evaluación y la nuestra",
+            ],
+          ],
+        },
+        {
+          title: "Aularagón",
+          collapsable: false,
+          children: [
+            ["/content/memes", "Memes"],
+            ["/content/crditos", "Créditos"],
+          ],
+        },
+      ],
+    },
+  },
+  head: [
+    // Icono de la pestaña del navegador:
+    [
+      "link",
+      {
+        rel: "icon",
+        href: `/logos/open-book-32px.png`,
+      },
+    ],
+    // Podemos importar Web components externos y usarlo dentro de los componentes de Vue:
+    [
+      "script",
+      {
+        src: "https://unpkg.com/@alex-arriaga/stencil-webtraining-components@0.0.2/dist/webtraining-components-demo.js",
+      },
+    ],
+    // Podemos usar nuestro propio Framework CSS:
+    [
+      "link",
+      {
+        rel: "stylesheet",
+        href: "/mycss/bootstrap.min.css"
+        // "href": "https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+      },
+    ],
+    // Podemos importar hojas de Estilo CSS que requieran los componentes:
+    [
+      "link",
+      {
+        rel: "stylesheet",
+        href: "https://unpkg.com/leaflet/dist/leaflet.css"
+      },
+    ],
+  ],
+  plugins: [
+    "@vuepress/back-to-top",
+    ["vuepress-plugin-code-copy", true],
+    ["vuepress-plugin-export"],
+  ],
+  configureWebpack: {
+    resolve: {
+      alias: {
+        // Para usarlo: ~@assets/<fichero dentro de ../assets>
+        "@assets": path.resolve(__dirname, "../content/assets"),
+        "@img": path.resolve(__dirname, "../content/img"),
+      },
+    },
+  },
+};
+' > "${FICHCONF}"

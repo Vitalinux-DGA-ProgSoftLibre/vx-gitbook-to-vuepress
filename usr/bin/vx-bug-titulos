@@ -1,0 +1,19 @@
+#!/bin/bash
+# desc: corrige el bug de no dejar espacio entre el simbolo "#" y el comienzo del título
+
+[ -z "${1}" ] && \
+RUTA_CONTENIDOS="docs/content" || \
+{
+    [ -d "${1}" ] && \
+    RUTA_CONTENIDOS="${1}" || \
+    {
+        echo "=> El directorio indicado como parámetro no existe: ${1}"
+        exit 1 ;
+    }
+}
+
+for FICH in $(find "${RUTA_CONTENIDOS}" -name "*.md") ; do
+    [ -f "${FICH}" ] && \
+    sed -i "s/\(^#\+\)\([0-9a-zA-Z]\+.*\)/\1 \2/g" "${FICH}" && \
+    echo "=> Se ha corregido los posibles BUGs de Títulos en: ${FICH}"
+done

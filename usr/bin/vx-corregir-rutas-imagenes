@@ -1,0 +1,54 @@
+#!/bin/bash
+
+
+[ -z "${1}" ] && \
+RUTA_CONTENIDOS="docs/content" || \
+{
+    [ -d "${1}" ] && \
+    RUTA_CONTENIDOS="${1}" || \
+    {
+        echo "=> El directorio indicado como parámetro no existe: ${1}"
+        exit 1 ;
+    }
+}
+
+SAVEIFS=$IFS   # Save current IFS
+IFS=$'\n'      # Change IFS to new line
+
+# Obtenemos la lista de todos los archivos que contienen imágenes:
+# LISTADO=("../curso-de-tutores-vuepress/docs/content/4_temporizacin.md:![](img/notebook-428293_1280.jpg)")
+LISTADO=($(grep -R ".*\!\[[^]]*\]([^~].*)" "${RUTA_CONTENIDOS}"))
+
+for ELE in "${LISTADO[@]}" ; do
+    # ELE tiene el siguiente formato:
+    # docs/content/1_obligaciones_del_tutor.md:![](/assets/buentutor.png)
+    # docs/content/index1.md:![logo Aularagón](img/Aularagon.jpg)
+    # Rescatamos la ruta del archivo con "%%:*":
+    # Con "%:*" si el patrón fuera "docs/content/index1.md:[![logo](img/img.jpg)](http://...)" obtendríamos a partir del "http:":
+    FICH="${ELE%%:*}"
+    echo "=> Inspeccionando el archivo: \"${FICH}\""
+    # Extraemos la 2parte del patrón encontrado por el grep correspondiente a la imagen en markdown:
+    MARKDOWNIMG="${ELE#*:}"
+    echo "=> Imagen markdown: \"${MARKDOWNIMG}\""
+    # Rescatamos el Texto Alternativo que hay entre "![...](":
+    # AUX="${ELE#*\![}"
+    # TEXTO_ALTERNATIVO="${ELE%%](*}"
+    TEXTO_ALTERNATIVO="$(echo "${ELE#*:}" | sed -e 's#.*\!\[\([^]]*\)\](\([^)]*\)).*#\1#')"
+    echo "=> TEXTO_ALTERNATIVO: \"${TEXTO_ALTERNATIVO}\""
+    # Rescatamos la ruta de la imagen que se encuentra entre ():
+    RUTA_IMAGEN="$(echo "${ELE#*:}" | sed -e 's#.*\!\[\([^]]*\)\](\([^)]*\)).*#\2#')"
+    echo "=> RUTA_IMAGEN: \"${RUTA_IMAGEN}\""
+    # Comprobamos que la ruta no es de una URL de un servicio externo: https:// ftp:// mailto:// ...
+    if [[ -f "${FICH}" && ! "${RUTA_IMAGEN}" =~ :// ]] ; then
+        DIRBASE="$(dirname "${RUTA_IMAGEN##/}")"
+        IMAGEN="$(basename "${RUTA_IMAGEN}")"
+        SUSTITUCION="![${TEXTO_ALTERNATIVO}](~@${DIRBASE}/${IMAGEN})"
+        # REGEX='\!\[${TEXTO_ALTERNATIVO}\](${RUTA_IMAGEN})'
+        sed -i "s;\!\[${TEXTO_ALTERNATIVO}\](${RUTA_IMAGEN});${SUSTITUCION};g" "${FICH}" && \
+        echo "=> Ruta IMAGEN Corregida: ${FICH} => \"${MARKDOWNIMG}\" : \"${SUSTITUCION}\"" || \
+        echo "=> ¡¡Problemas para corregir la ruta de la IMAGEN: ${FICH} : ${MARKDOWNIMG}"
+    fi
+done
+
+echo "Total: ${#LISTADO[@]}"
+IFS=$SAVEIFS

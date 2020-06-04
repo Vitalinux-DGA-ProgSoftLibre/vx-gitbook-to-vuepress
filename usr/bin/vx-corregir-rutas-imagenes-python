@@ -1,0 +1,57 @@
+#!/usr/bin/python3
+
+import re
+import os
+import sys
+
+# cadena = '[![Imagen 2. Texto Alt](img/imagen.png)](https://pixabay.com/es/)'
+# regex = '.*\!\[(.+?)\]\(.*'
+# found = re.search(regex, cadena).group(1)
+
+
+def mostrar(modo, cadena):
+    if (modo == "texto"):
+        regex = '.*\!\[(.+?)\]\(.*'
+    if (modo == "rutaimg"):
+        regex = '.*\!\[.+?\]\((.+?)\).*'
+    try:
+        resultado = re.search(regex, cadena).group(1)
+        print(resultado)
+        os._exit(0)
+    except:
+        resultado = "null"
+        os._exit(1)
+
+
+def check_fichero_md(fichero):
+    regex = '.*\.md$'
+    return re.search(regex, fichero)
+
+
+def listar_archivos_md(path):
+    # os.walk(path) nos permite recorrer el arbol de ficheros y directorios que cuelgan de path
+    for root, dirs, fnames in os.walk(path):
+        fnames_md = list(filter(check_fichero_md, fnames))
+        for fname in fnames_md:
+            print(os.path.join(root, fname))
+
+
+def uso():
+    print("=> Debes pasar correctamente los parámetros ...")
+
+
+try:
+    regex = '^--.*'
+    if (not re.search(regex, sys.argv[1])):
+        uso()
+        os._exit(1)
+    if (sys.argv[1] == "--list-md"):
+        listar_archivos_md(sys.argv[2])
+    if (sys.argv[1] == "--show-texto"):
+        mostrar("texto", sys.argv[2])
+    if (sys.argv[1] == "--show-rutaimg"):
+        mostrar("rutaimg", sys.argv[2])
+except:
+    uso()
+    os._exit(1)
+os._exit(0)
