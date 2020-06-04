@@ -41,5 +41,27 @@ LISTADO_CURSOS=($(${COMANDO} --url)) || \
     check_repos "${@}"
 }
 
+echo "=> Listado de cursos a convertir a formato Vuepress:"
 echo "${LISTADO_CURSOS[@]}" | tr -s " " "\n"
 echo "Fin del listado: ${#LISTADO_CURSOS[@]}"
+
+PLANTILLA="/usr/share/catedu/template-cursos"
+[ ! -d "${PLANTILLA}" ] && PLANTILLA="usr/share/catedu/template-cursos"
+for CURSO in "${LISTADO_CURSOS[@]}" ; do
+    NOMBRE="$(basename "http://github.com/catedu/wikijs.git" | awk -F ".git" '{ print $1 }')"
+    [ -d "${NOMBRE}" ] && {
+        TEXTO="=> ¡¡Ya existe un directorio con el nombre: ${NOMBRE}!! Debes eliminarlo ..."
+        uso "${TEXTO}" && exit 1 ;
+    }
+    mkdir -p "${NOMBRE}/docs" && \
+    {
+        git clone "${CURSO}" "${NOMBRE}/docs"
+        # Copiamos la estructura de la plantilla de un curso Vuepress:
+        rsync -ahv "${PLANTILLA}/"* "${NOMBRE}/" ;
+        
+    } || \
+    {
+        TEXTO="Problemas para crear el directorio ${NOMBRE} ... ¿Permisos?"
+        uso "${TEXTO}" && exit 1 ;
+    }
+done
