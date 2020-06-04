@@ -1,0 +1,45 @@
+#!/bin/bash
+
+uso() {
+    [ ! -z "${1}" ] && echo "=> ${1}"
+    echo -e "=> Debes pasar como parámetro la URL o URLs de los repositorio de \
+GitLab, GitHub, ... donde se localizan los GitBooks a convertir a formato Vuepress.
+Para el caso particular de los cursos o documentación de CATEDU se puede pasar \
+directamente el parámetro --all-github-cursos-catedu y el script se encargará de \
+buscar todos los repositorios públicos de documentación escrita en formato GitBook \
+existen para pasarlos a formato Vuepress
+Por Ejemplo:
+vx-gitbook-to-vuepress https://github.com/catedu/curso-moodle https://github.com/catedu/curso_de_edmodo ...
+vx-gitbook-to-vuepress --all-github-cursos-catedu
+    "
+}
+
+LISTADO_CURSOS=()
+
+[ -z "${1}" ] && uso && exit 1
+
+check_repos() {
+    until [ -z "${1}" ] ; do
+        REGEX='^[A-Za-z]+://.*'
+        [[ ! "${1}" =~ ${REGEX} ]] && \
+        uso "URL de algún repo indicado incorrecta" && exit 1
+        REGEX='^[A-Za-z]+://.*\.git'
+        [[ "${1}" =~ ${REGEX} ]] && \
+        LISTADO_CURSOS+=( "${1}" ) || \
+        LISTADO_CURSOS+=( "${1}.git" )
+        shift
+    done
+}
+
+# Generamos el comando de pruebas en desarrollo del script:
+COMANDO="/usr/bin/vx-catedu-obtener-lista-repos-github"
+[ ! -x "${COMANDO}" ] && COMANDO="usr/bin/vx-catedu-obtener-lista-repos-github"
+
+[[ "${1}" == "--all-github-cursos-catedu" ]] && \
+LISTADO_CURSOS=($(${COMANDO} --url)) || \
+{
+    check_repos "${@}"
+}
+
+echo "${LISTADO_CURSOS[@]}" | tr -s " " "\n"
+echo "Fin del listado: ${#LISTADO_CURSOS[@]}"

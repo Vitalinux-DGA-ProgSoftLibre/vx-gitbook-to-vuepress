@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# URLs inportantes: API de github
+# https://developer.github.com/v3/
+
+# Posibles consultas interesantes:
+# curl -s "https://api.github.com/users/${USER}/repos?type=all&per_page=100" -H "Authorization: token ${AUTH}" | jq '. | length'
+# curl -X GET https://api.github.com/users/<myuser>/repos\?type=all
+
+PREFIJO="https://github.com/catedu/"
+SUFIJO=".git"
+
+uso() {
+    echo -e "=> La llamada al script sin parametros devuelve la lista \
+del nombre de todos los cursos de CATEDU:
+    vx-catedu-obtener-lista-repos-github
+    curso_moodle senderismo robotica ...
+=> Si le pasamos como parámetro [--url|-u] devuelve la lista de URLs de los repositorios \
+asociados a los cursos cursos de CATEDU:
+    vx-catedu-obtener-lista-repos-github --url
+    ${PREFIJO}curso_moodle${SUFIJO} ${PREFIJO}senderismo${SUFIJO} ..."
+}
+
+
+REGEX='^-u$|^--url$'
+[[ ! -z "${1}" && ! "${1}" =~ ${REGEX} ]] && uso && exit 1
+
+LISTADO_CURSOS=()
+
+urls_cursos_catedu() {
+    for NUM in $(seq 0 ${#LISTADO_CURSOS[@]}) ; do
+        [ -z "${LISTADO_CURSOS[${NUM}]}" ] && continue
+        LISTADO_CURSOS[${NUM}]="${PREFIJO}${LISTADO_CURSOS[${NUM}]}${SUFIJO}"
+    done
+}
+
+for CONT in {1..10} ; do
+    NCURSOS="${#LISTADO_CURSOS[@]}"
+    LISTADO_CURSOS+=($(curl "https://api.github.com/users/catedu/repos?per_page=100&page=${CONT}" | jq -r '.[] | .name'))
+    # Comprobamos si el curl devolvió más cursos por página o ya no quedan por listar:
+    (( NCURSOS == ${#LISTADO_CURSOS[@]} )) && break
+done
+
+[[ "${1}" =~ ${REGEX} ]] && urls_cursos_catedu
+echo "${LISTADO_CURSOS[@]}" | tr -s " " "\n"

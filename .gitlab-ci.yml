@@ -1,17 +1,35 @@
-image: node:13.12.0
+variables:
+  _USER: "builduser"
+  _PATH: /home/$_USER/$CI_PROJECT_NAME
 
-pages:
-  cache:
-    paths:
-    - node_modules/
+stages:
+  - build
+  - upload
 
+build-vitalinux18:
+  image: vitalinux18:dev
+  stage: build
   script:
-  - yarn install
-  - yarn run build
-
+    - useradd -m $_USER
+    - mkdir -p $_PATH
+    - mv * $_PATH
+    - pushd $_PATH
+    - su -c "/usr/bin/debuild --no-tgz-check -us -uc" $_USER
+    - popd
+    - mv /home/$_USER/*.deb .
   artifacts:
+    expire_in: 1 days
     paths:
-    - public
-  
+      - ./*.deb
   only:
-  - master
+    - tags
+
+upload-vitalinux18:
+  image: vitalinux18:dev
+  stage: upload
+  script:
+    - MIGASFREE_PACKAGER_PROJECT=VX-18.04 migasfree-upload -f *.deb
+  dependencies:
+    - build-vitalinux18
+  only:
+    - tags
