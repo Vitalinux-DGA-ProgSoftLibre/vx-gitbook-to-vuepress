@@ -1,5 +1,6 @@
 #!/usr/bin/python3
-
+# lastact: 2020-6-5
+# desc: Genera el sidebar del config.js de Vuepress a partir
 import re
 import os
 import sys
@@ -7,9 +8,9 @@ import sys
 
 def salir_error(otro_texto):
     texto = "¡¡Error!! El script requiere al menos 1 parámetros:\n"
-    texto += "1) Fichero 2) Patron/Regex a buscar 3) Valor de sustitución\n"
-    texto += "Ej. vx-regex-sustitucion '/ruta/fichero' '/n#.*/n' '/n' (Elimina Comentarios)\n"
-    texto += "Si se añade al final '--save' se guardará la sustitución in-place en el archivo indicado"
+    texto += "1) La ruta del fichero SUMMARY.md del cual generar el sidebar del config.js de Vuepress\n"
+    texto += "Ej. vx-gitbook_summary-to-vuepress_sidebar '<ruta_summary.md>'"
+    texto += "El sidebar resultante se guardará en '<config.sidebar.json>' junto a '<summary.md>'"
     if (otro_texto != ""):
         texto += "\n" + otro_texto
     print(texto)
@@ -23,14 +24,19 @@ try:
 except:
     salir_error("")
 
-mifile = sys.argv[1]
+summary_file = sys.argv[1]
 try:
-    fichero = open(mifile)
+    fichero = open(summary_file)
     contenido = fichero.read()
 except:
-    mensaje = "=> El archivo indicado como parámetro no existe: " + mifile
+    mensaje = "=> El archivo indicado como parámetro no existe: " + summary_file
     salir_error(mensaje)
     os._exit(1)
+
+# Comprobamos si hay separardores en el summary.md: "___" => "## Otros"
+regex = '\n___'
+sustitucion = "## Otros ..."
+contenido = re.sub(regex, sustitucion, contenido)
 
 # Eliminamos líneas en blanco:
 # with open('path/to/file') as infile, open('output.txt', 'w') as outfile:
@@ -105,34 +111,12 @@ regex = '##\s+(.*?)\n+?([^#]*)'
 sustitucion = '{\n\ttitle: "\g<1>",\n\tcollapsable: false,\n\tchildren: [\n\t\t\g<2>\t]\n},\n'
 # sustitucion = '---\g<2>---'
 resultado = re.sub(regex, sustitucion, resultado)
+resultado = 'sidebar: { "/": [\n' + resultado + '\n]\n},'
 print(resultado)
 
+ruta_destino = os.path.dirname(summary_file) + "/config.sidebar.json"
+destino = open(ruta_destino, "w")
+n = destino.write(resultado)
+destino.close()
+
 os._exit(0)
-
-
-for ntrozo in range(0, ntrozos):
-    # print("=> " + trozos[ntrozo])
-    regex = '\n +\*[ \t\r\f\v\n]+\[(.+?)\]\(.+?\)'
-    titulo = str(re.search(regex, trozos[ntrozo]).group(1))
-    regex = '\s+\*\s+\[.+?\]\((.+?)\)'
-    ruta = str(re.search(regex, trozos[ntrozo]).group(1))
-    regex = str("\s+\*\s+\[" + str(titulo) + "\]\(" + str(ruta) + "\)")
-    sustitucion = str("--" + titulo + "---" + ruta + "---")
-    print("regex: " + regex + "\nsustitucion: " + sustitucion)
-    if re.search(regex, sustitucion):
-        trozos[ntrozo] = re.sub(regex, sustitucion, trozos[ntrozo])
-    else:
-        print("No hay sustitucion!!")
-
-for trozo in trozos:
-    print("=> " + trozo)
-
-# {
-#     title: "",
-#     collapsable: false,
-#     children: [
-#         ["/content/index0/la-comunicacion", "1.1.-La comunicación"],
-#         ["/content/index0/interactividad", "1.2 Interactividad"],
-#         ["/content/_cuando_escribas", "1.3 ... cuando escribas"],
-#     ],
-# },

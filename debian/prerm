@@ -19,25 +19,12 @@ set -e
 
 case "$1" in
     remove|upgrade|deconfigure)
-       if [ "remove" = "$1" ]
-       then
-          rm /usr/bin/vx-pk-*
-	  rm /usr/bin/vx-etiquetas*
-	  rm /usr/bin/vx-migasfree*
-	  rm /usr/bin/vx-hostname
-	  rm /usr/bin/vx-autologin
-	  rm /usr/bin/vx-actualizar-sistema
-	  rm -Rf /etc/skel/.vx-dga.d
-	  rm -Rf /etc/skel/.gnome2/nautilus-scripts
-	  rm /usr/share/polkit-1/actions/migasfree.pkexec*
-	  rm /usr/share/polkit-1/actions/sistema.pkexec*
-	  chmod 755 /usr/bin/pkexec
-       fi
+        echo "=> Prerm de vx-gitbook-to-vuepress"
     ;;
-
+    
     failed-upgrade)
     ;;
-
+    
     *)
         echo "prerm called with unknown argument \`$1'" >&2
         exit 1

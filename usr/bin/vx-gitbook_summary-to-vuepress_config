@@ -1,0 +1,85 @@
+#!/bin/bash
+#
+# Uso: vx-gitbook_summary-to-vuepress_config "<DIR_BASE_GITBOOK>"
+
+uso() {
+    [ ! -z "${1}" ] && echo -e "=> ${1}"
+    echo "=> Debes pasar como parámetro la ruta del directorio base que contiene el clone del
+repo GitBook:
+vx-gitbook_summary-to-vuepress_config \"<DIR_BASE_GITBOOK>\"
+    "
+}
+
+[ -z "${1}" ] && uso && exit 1
+TEXTO="¡¡Error!! \"${1}\" no es un directorio existente ..."
+[[ ! -d "${1}" ]] && uso "${TEXTO}" && exit 2
+# 1) Comprobamos que DIR_BASE_GITBOOK contiene un SUMMARY.md y un book.json:
+DIR_BASE_GITBOOK="${1}"
+SUMMARY="${DIR_BASE_GITBOOK}/SUMMARY.md"
+BOOKJSON="${DIR_BASE_GITBOOK}/book.json"
+TEXTO="¡¡No parace un repo de GitBook!! Debe existir un ${SUMMARY} y un ${BOOKJSON} ..."
+! [[ -f "${SUMMARY}" && -f "${BOOKJSON}" ]] && uso "${TEXTO}" && exit 3
+
+# 2) Obtenemos datos del book.json:
+GITHUBOWNER="$(jq -r '.pluginsConfig.githubcontributors.githubOwner' "${BOOKJSON}")"
+GITHUBREPOSITORY="$(jq -r '.pluginsConfig.githubcontributors.githubRepository' "${BOOKJSON}")"
+TITULO="$(jq -r ".variables.title" "${BOOKJSON}")"
+[[ "${TITULO}" == "null" ]] && TITULO="$(basename $(dirname "${DIR_BASE_GITBOOK}"))"
+# Ponemos la primera letra de cada palabra en mayúsculas:
+TITULO=(${TITULO//[^[:alnum:]]/ }) # Eliminamos caracteres no alfanumerícos y formamos un array
+TITULO="${TITULO[@]^}" # Ponemos la primera letra en mayuscula de cada elemento
+
+# 3) Generamos el config.js a partir del SUMMARY.md:
+CONFIGJS_TEMPLATE="/usr/share/catedu/template-cursos/docs/.vuepress/config.js"
+[ ! -f "${CONFIGJS_TEMPLATE}" ] && CONFIGJS_TEMPLATE="usr/share/catedu/template-cursos/docs/.vuepress/config.js"
+
+# 3.1) Generamos el sidebar del config.js del curso de Vuepress:
+COMANDO="/usr/bin/vx-gitbook_summary-to-vuepress_sidebar"
+[ ! -x "${COMANDO}" ] && COMANDO="usr/bin/vx-gitbook_summary-to-vuepress_sidebar"
+vx-gitbook_summary-to-vuepress_sidebar "${SUMMARY}"
+SIDEBAR_CONFIG="${DIR_BASE_GITBOOK}/config.sidebar.json"
+[ ! -f "${SIDEBAR_CONFIG}" ] && \
+{
+    TEXTO="¡¡Problemas para generar el sidebar de ${DIR_BASE_GITBOOK}!!" ;
+    uso "${TEXTO}" && exit 5 ;
+}
+# SIDEBAR="$(< "${SIDEBAR_CONFIG}")"
+
+# 3.2) Personalizamos la plantilla de config.js:
+[ ! -d "${DIR_BASE_GITBOOK}/.vuepress" ] && \
+{
+    TEXTO="¡¡Error!! No existe el directorio ${DIR_BASE_GITBOOK}/.vuepress" ;
+    uso "${TEXTO}" && exit 6 ;
+}
+cp -f "${CONFIGJS_TEMPLATE}" "${DIR_BASE_GITBOOK}/.vuepress"
+CONFIGJS="${DIR_BASE_GITBOOK}/.vuepress/config.js"
+[ ! -f "${CONFIGJS}" ] && \
+{
+    TEXTO="¡¡Error!! No existe el fichero ${CONFIGJS}" ;
+    uso "${TEXTO}" && exit 6 ;
+}
+# 3.2.1) Personalizamos el title:
+sed -i "s/title: .*,/title: \"${TITULO}\",/g" "${CONFIGJS}"
+# 3.2.2) Personalizamos el sidebar:
+## Para ello hacemos uso de sed para sustituir un patrón por el contenido de un fichero:
+sed -e '/sidebar: .*,/ {' -e "r ${SIDEBAR_CONFIG}" -e 'd}' -i "${CONFIGJS}"
+rm -f "${SIDEBAR_CONFIG}"
+# 3.2.3) Personalizamos la base o alias de la URL:
+BASE="$(basename $(dirname "${DIR_BASE_GITBOOK}"))"
+sed -i "s#base: .*,#base: \"/${BASE}/\",#g" "${CONFIGJS}"
+# 3.2.4) Personalizamos la URL Repo:
+[ ! -z "${2}" ] && \
+{
+    GITREPO="${2}" ;
+    sed -i "s#repo: .*,#repo: \"${GITREPO}\",#g" "${CONFIGJS}" ;
+} || sed -i '/.*repo: GITREPO,$/d' "${CONFIGJS}"
+# 3.2.5) Personlizamos docsRepo:
+[ ! -z "${2}" ] && \
+{
+    DOCSREPO="$(echo "${2}" | sed -e "s#.*://[^/]*/\(.*\)\.git#\1#g")" ;
+    sed -i "s#docsRepo: .*,#docsRepo: \"${DOCSREPO}\",#g" "${CONFIGJS}" ;
+} || sed -i '/.*docsRepo: DOCSREPO,$/d' "${CONFIGJS}"
+
+cat "${CONFIGJS}"
+echo -e "\n--Terminado--"
+exit 0
