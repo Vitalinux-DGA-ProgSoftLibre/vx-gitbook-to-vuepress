@@ -73,12 +73,17 @@ sed -i "s#base: .*,#base: \"/${BASE}/\",#g" "${CONFIGJS}"
     GITREPO="${2}" ;
     sed -i "s#repo: .*,#repo: \"${GITREPO}\",#g" "${CONFIGJS}" ;
 } || sed -i '/.*repo: GITREPO,$/d' "${CONFIGJS}"
-# 3.2.5) Personlizamos docsRepo:
+# 3.2.5) Personalizamos docsRepo:
 [ ! -z "${2}" ] && \
 {
     DOCSREPO="$(echo "${2}" | sed -e "s#.*://[^/]*/\(.*\)\.git#\1#g")" ;
     sed -i "s#docsRepo: .*,#docsRepo: \"${DOCSREPO}\",#g" "${CONFIGJS}" ;
 } || sed -i '/.*docsRepo: DOCSREPO,$/d' "${CONFIGJS}"
+# 3.3.6) Personalizamos los alias de Webpack:
+# Corregimos las rutas de las imagenes y configuramos los alias en Webpack en config.js
+COMANDO="/usr/bin/vx-gitbook-rutas_imagenes-webpack"
+[ ! -x "${COMANDO}" ] && COMANDO="usr/bin/vx-gitbook-rutas_imagenes-webpack"
+"${COMANDO}" "${DIR_BASE_GITBOOK}"
 
 cat "${CONFIGJS}"
 echo -e "\n--Terminado--"

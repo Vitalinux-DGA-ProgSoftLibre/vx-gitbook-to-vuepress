@@ -2,27 +2,49 @@
 
 
 [ -z "${1}" ] && \
-RUTA_CONTENIDOS="docs/content" || \
+{
+    echo "=> Debes pasar como parámetro el directorio con ficheros markdown donde buscar imágenes ..."
+    exit 1 ;
+    
+} || \
 {
     [ -d "${1}" ] && \
-    RUTA_CONTENIDOS="${1}" || \
+    DIR_BASE_GITBOOK="${1}" || \
     {
         echo "=> El directorio indicado como parámetro no existe: ${1}"
-        exit 1 ;
+        exit 2 ;
     }
 }
 
 SAVEIFS=$IFS   # Save current IFS
 IFS=$'\n'      # Change IFS to new line
 
+ALIASWEBPACK=()
+RESULTADO=""
+
+aplicar_configuracion_webpack() {
+  echo "--- Terminando: Generando los Alias para la configuración de Webpack de config.js ---"
+  RESULTADO="$(for ITEM in "${ALIASWEBPACK[@]}" ; do
+    echo "\"@${ITEM}\": path.resolve(__dirname, \"../${ITEM}\"),"
+  done)"
+  CONFIGJS="${DIR_BASE_GITBOOK}/.vuepress/config.js"
+  [ -f "${CONFIGJS}" ] && \
+  sed -i "s#alias: ALIASWEBPACK,#alias: ${RESULTADO},#g" "${CONFIGJS}"
+}
+
+alias_webpack() {
+  ALIAS="${1}"
+  ! [[ " ${ALIASWEBPACK[@]} " =~ " ${ALIAS} " ]] && ALIASWEBPACK+=("${ALIAS}")
+}
+
 # Obtenemos la lista de todos los archivos que contienen imágenes:
 # LISTADO=("../curso-de-tutores-vuepress/docs/content/4_temporizacin.md:![](img/notebook-428293_1280.jpg)")
-LISTADO=($(grep -R ".*\!\[[^]]*\]([^~].*)" "${RUTA_CONTENIDOS}"))
+LISTADO=($(grep -R ".*\!\[[^]]*\]([^~].*)" "${DIR_BASE_GITBOOK}"))
 
 for ELE in "${LISTADO[@]}" ; do
     # ELE tiene el siguiente formato:
-    # docs/content/1_obligaciones_del_tutor.md:![](/assets/buentutor.png)
-    # docs/content/index1.md:![logo Aularagón](img/Aularagon.jpg)
+    # docs/1_obligaciones_del_tutor.md:![](/assets/buentutor.png)
+    # docs/index1.md:![logo Aularagón](img/Aularagon.jpg)
     # Rescatamos la ruta del archivo con "%%:*":
     # Con "%:*" si el patrón fuera "docs/content/index1.md:[![logo](img/img.jpg)](http://...)" obtendríamos a partir del "http:":
     FICH="${ELE%%:*}"
@@ -45,7 +67,14 @@ for ELE in "${LISTADO[@]}" ; do
         SUSTITUCION="![${TEXTO_ALTERNATIVO}](~@${DIRBASE}/${IMAGEN})"
         # REGEX='\!\[${TEXTO_ALTERNATIVO}\](${RUTA_IMAGEN})'
         sed -i "s;\!\[${TEXTO_ALTERNATIVO}\](${RUTA_IMAGEN});${SUSTITUCION};g" "${FICH}" && \
-        echo "=> Ruta IMAGEN Corregida: ${FICH} => \"${MARKDOWNIMG}\" : \"${SUSTITUCION}\"" || \
+        {
+            echo "=> Ruta IMAGEN Corregida: ${FICH} => \"${MARKDOWNIMG}\" : \"${SUSTITUCION}\""
+            [[ "${DIRBASE}" == ^/.* ]] && \
+            ALIAS="$(echo "${DIRBASE}" | sed "s#/\([^/]*\)/.*#\1#g")" || \
+            ALIAS="$(echo "${DIRBASE}" | sed "s#\([^/]*\)/.*#\1#g")"
+            #echo "\"@${ALIAS}\": path.resolve(__dirname, \"../${ALIAS}\"),"
+            alias_webpack "${ALIAS}" ;
+        } || \
         echo "=> ¡¡Problemas para corregir la ruta de la IMAGEN: ${FICH} : ${MARKDOWNIMG}"
     fi
 done

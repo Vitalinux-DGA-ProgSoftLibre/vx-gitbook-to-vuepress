@@ -85,11 +85,8 @@ module.exports = {
   ],
   configureWebpack: {
     resolve: {
-      alias: {
-        // Para usarlo: ~@assets/<fichero dentro de ../assets>
-        "@assets": path.resolve(__dirname, "../assets"),
-        "@img": path.resolve(__dirname, "../img"),
-      },
+      // Para usar los alias: ~@alias/<fichero dentro de ../alias>
+      alias: ALIASWEBPACK,
     },
   },
   chainWebpack: (config) => {

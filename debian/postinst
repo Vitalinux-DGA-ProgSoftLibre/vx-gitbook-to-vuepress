@@ -20,6 +20,8 @@ set -e
 case "$1" in
     configure)
         echo "=> Postinstall de vx-gitbook-to-vuepress ..."
+        echo "Damos permiso de ejecución a los scripts"
+        chmod +x "/usr/bin/vx-"*
     ;;
     
     abort-upgrade|abort-remove|abort-deconfigure)
