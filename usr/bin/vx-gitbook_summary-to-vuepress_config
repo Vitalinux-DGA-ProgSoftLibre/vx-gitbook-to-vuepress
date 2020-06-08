@@ -30,8 +30,8 @@ TITULO=(${TITULO//[^[:alnum:]]/ }) # Eliminamos caracteres no alfanumerícos y f
 TITULO="${TITULO[@]^}" # Ponemos la primera letra en mayuscula de cada elemento
 
 # 3) Generamos el config.js a partir del SUMMARY.md:
-CONFIGJS_TEMPLATE="/usr/share/catedu/template-cursos/docs/.vuepress/config.js"
-[ ! -f "${CONFIGJS_TEMPLATE}" ] && CONFIGJS_TEMPLATE="usr/share/catedu/template-cursos/docs/.vuepress/config.js"
+CONFIGJS_TEMPLATE="/usr/share/catedu/template-vuepress/docs/.vuepress/config.js"
+[ ! -f "${CONFIGJS_TEMPLATE}" ] && CONFIGJS_TEMPLATE="usr/share/catedu/template-vuepress/docs/.vuepress/config.js"
 
 # 3.1) Generamos el sidebar del config.js del curso de Vuepress:
 COMANDO="/usr/bin/vx-gitbook_summary-to-vuepress_sidebar"

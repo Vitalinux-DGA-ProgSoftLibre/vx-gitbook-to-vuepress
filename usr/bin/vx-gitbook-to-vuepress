@@ -45,8 +45,8 @@ echo "=> Listado de cursos a convertir a formato Vuepress:"
 echo "${LISTADO_CURSOS[@]}" | tr -s " " "\n"
 echo "Fin del listado: ${#LISTADO_CURSOS[@]}"
 
-PLANTILLA="/usr/share/catedu/template-cursos"
-[ ! -d "${PLANTILLA}" ] && PLANTILLA="usr/share/catedu/template-cursos"
+PLANTILLA="/usr/share/catedu/template-vuepress"
+[ ! -d "${PLANTILLA}" ] && PLANTILLA="usr/share/catedu/template-vuepress"
 for CURSO in "${LISTADO_CURSOS[@]}" ; do
     # Extraemos el nombre del repo y creamos un DIR donde volcar el repo y darle formato Vuepress:
     NOMBRE="$(basename "${CURSO}" | awk -F ".git" '{ print $1 }')"
