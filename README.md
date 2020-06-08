@@ -1,10 +1,64 @@
 # vx-gitbook-to-vuepress:
 
-Este paquete proporciona los scripts necesarios para convertir un curso o documentación escrita en formato GitBook a formato Vuepress.  En concreto, lleva a cado las siguientes acciones:
+Este paquete proporciona los scripts necesarios para convertir un curso o documentación escrita en formato GitBook a formato Vuepress. En concreto, lleva a cado las siguientes acciones:
 
 1. Crea un subdirectorio **docs** donde se almacenan todos los ficheros markdown, imágenes, pdfs, ... y demás archivos que componen la documentación del GitBook a convertir.
 2. Crea un subdirectorio **docs/.vuepress** donde se almacenan todos los ficheros de configuración del tema de Vuepress: components, theme, layaut, css, etc.
 3. Genera el archivo principal de configuración de vuepress **docs/.vuepress/config.js** a partir del **book.json** y **SUMMARY.md** de GitBook.
+
+## Características a Destacar
+
+### docs/enhanceApp.js
+
+Este fichero nos permite aplicar configuraciones que tendrán repercusiones a nivel global:
+
+1. Nos permite declarar **Mixins** con la finalidad de poder reutilizar variables o metodos que puedan ser reconocidos y utilizados en cualquier componente Vue o insertado dentro del texto markdown que cualquier fichero.
+2. Nos permite declarar nuevas rutas del **router** asociadas a componentes que queramos crear.
+3. Nos permite declarar componentes, plugins o funcionalidades que hayan sido instaladas vía npm que pueden ser reutilizados a posteriori desde cualquier otro componente o desde el propio texto markdown sin necesidad de su declaración.
+
+```js
+import VueTypedJs from "vue-typed-js";
+// Para poder incluir en un markdown file el contenido de otro markdown:
+import { findPageForPath } from "@app/util";
+import book from "../book.json";
+
+export default ({
+  Vue, // the version of Vue being used in the VuePress app
+  options, // the options for the root Vue instance
+  router, // the router instance for the app
+  siteData, // site metadata
+}) => {
+  // Para poder incluir en un markdown file el contenido de otro markdown:
+  // En el markdown file habrá que incluir un componente de este tipo:
+  // <Content :page-key="getPageKey($site.pages, '/path/to/my-other-markdown-file/')" />
+  Vue.mixin({
+    data() {
+      return {
+        book: book.variables,
+      };
+    },
+    methods: {
+      getPageKey(pages, path) {
+        const result = findPageForPath(pages, path);
+        return result.key;
+      },
+    },
+  });
+  if (typeof process === "undefined") {
+    // process is undefined in a browser
+    // https: //github.com/Orlandster/vue-typed-js
+    Vue.use(VueTypedJs);
+  }
+  // router.addRoutes([{
+  //     path: "/nombre_ruta",
+  //     component: NombreComponente
+  // }])
+};
+```
+
+### Footer del sitio Web y FOOTER.md
+
+El fichero **FOOTER.md** utilizado por gitbook mediante su plugin **localized-footer** es renombrado a **.FOOTER.md** para evitar problemas en la renderización HTML que se realiza al hacer el **npm run build**. El contenido de este archivo **FOOTER.md** será tenido en cuenta si se desea descomentando el parámetro **footer** del **themeConfig** en **docs/.vuepress/config.js**.
 
 ## Servir Vuepress a través de la Integración Continua de GitLab (GitLab CI)
 
@@ -21,7 +75,8 @@ documentation https://docs.gitlab.com/ee/user/project/pages/.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+**Table of Contents** _generated with [DocToc](https://github.com/thlorenz/doctoc)_
 
 - [](#)
   - [GitLab CI](#gitlab-ci)
@@ -52,7 +107,7 @@ pages:
   artifacts:
     paths:
     - public
-  
+
   only:
   - master
 
@@ -84,7 +139,7 @@ yarn start
 
 Your website should be available at [http://localhost:8080/vuepress]
 
-*Read more at VuePress' [documentation][].*
+_Read more at VuePress' [documentation][]._
 
 ## GitLab User or Group Pages
 
@@ -96,6 +151,7 @@ project's **Settings**.
 Read more about [user/group Pages][userpages] and [project Pages][projpages].
 
 ## Project name
+
 You'll need to set the correct base in docs/.vuepress/config.js.
 
 If you are deploying to https://<USERNAME or GROUP>.gitlab.io/, you can omit base as it defaults to "/".
@@ -115,6 +171,6 @@ unless you want to contribute back to the upstream project.
 [userpages]: https://docs.gitlab.com/ce/user/project/pages/introduction.html#user-or-group-pages
 [projpages]: https://docs.gitlab.com/ce/user/project/pages/introduction.html#project-pages
 
-----
+---
 
 Forked from @samdbeckham

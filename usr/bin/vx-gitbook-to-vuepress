@@ -66,6 +66,10 @@ for CURSO in "${LISTADO_CURSOS[@]}" ; do
             uso "${TEXTO}" && exit 1 ;
         } ;
     }
+    # Renombramos el FOOTER.md => .FOOTER.md para evitar problemas al renderizar HTML:
+    [ -f "${NOMBRE}/docs/FOOTER.md" ] && \
+    mv "${NOMBRE}/docs/FOOTER.md" "${NOMBRE}/docs/.FOOTER.md" && \
+    echo "=> Se ha renombrado: 'FOOTER.md' => '.FOOTER.md'"
     # Copiamos la estructura de la plantilla de un curso Vuepress:
     rsync -ahv "${PLANTILLA}/"* "${NOMBRE}/" ;
     # Uso: vx-gitbook_summary-to-vuepress_config "<DIR_BASE_GITBOOK>"
