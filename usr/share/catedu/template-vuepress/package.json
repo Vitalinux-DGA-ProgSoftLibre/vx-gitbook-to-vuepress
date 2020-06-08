@@ -1,0 +1,30 @@
+{
+  "name": "my_vuepress_from_gitbook",
+  "version": "1.0.0",
+  "description": "Documentación con Vuepress",
+  "main": "index.js",
+  "private": false,
+  "scripts": {
+    "start": "vuepress dev docs",
+    "build": "vuepress build docs",
+    "pdf": "vuepress export docs",
+    "eject": "vuepress eject docs",
+    "fa:build": "node node_modules/vuepress-plugin-font-awesome/index.js --dest=docs"
+  },
+  "dependencies": {
+    "@vuepress/plugin-back-to-top": "^1.5.0",
+    "axios": "^0.19.2",
+    "leaflet": "^1.6.0",
+    "vue-typed-js": "^0.1.2",
+    "vue2-leaflet": "^2.5.2",
+    "vuepress-plugin-code-copy": "^1.0.6",
+    "vuepress-plugin-font-awesome": "^1.90.6"
+  },
+  "devDependencies": {
+    "string-replace-loader": "^2.3.0",
+    "vuepress": "^1.5.0"
+  },
+  "keywords": [],
+  "author": "Arturo Martín Romero",
+  "license": "ISC"
+}
