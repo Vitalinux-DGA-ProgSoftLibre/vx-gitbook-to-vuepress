@@ -40,17 +40,6 @@ fi
 TITULO="${3:-"OpenBooks CATEDU"}"
 FICHNAME="${TITULO// /_}"
 
-vx-crear-resultante-from-summary() {
-    SAVEIFS=$IFS   # Save current IFS
-    IFS=$'\n'      # Change IFS to new line
-    FICHEROS=($(cat "${SUMMARY}" | sed "/^$/d" | sed "s/.*(\(.*\)).*/\1/g" | sed -n '/.*\.md/p'))
-    echo -n "" > "${RESULTANTE}"
-    for FICHERO in "${FICHEROS[@]}" ; do
-        cat "${DIRBASE}/${FICHERO}" >> "${RESULTANTE}"
-    done
-    IFS=$SAVEIFS
-}
-
 vx-crear-resultante-from-dir() {
     SAVEIFS=$IFS   # Save current IFS
     IFS=$'\n'      # Change IFS to new line
@@ -78,11 +67,24 @@ if [[ "${1}" == "--dir" ]]  ; then
     }
 fi
 
+vx-crear-resultante-from-summary() {
+    SAVEIFS=$IFS   # Save current IFS
+    IFS=$'\n'      # Change IFS to new line
+    FICHEROS=($(cat "${SUMMARY}" | sed "/^$/d" | sed "s/.*(\(.*\)).*/\1/g" | sed -n '/.*\.md/p'))
+    echo -n "" > "${RESULTANTE}"
+    for FICHERO in "${FICHEROS[@]}" ; do
+        cat "${DIRBASE}/${FICHERO}" >> "${RESULTANTE}"
+    done
+    IFS=$SAVEIFS
+}
+
 if [[ "${1}" == "--summary" ]]  ; then
     [[ -f "${2}" ]] && {
         SUMMARY="${2}"
         DIRBASE="$(dirname "${2}")"
-        RESULTANTE="${DIRBASE}/${FICHNAME}.md"
+        DIRBASE_PDF="${DIRBASE}/../vuepress-to-pdf"
+        [ ! -d "${DIRBASE_PDF}" ] && mkdir "${DIRBASE_PDF}"
+        RESULTANTE="${DIRBASE_PDF}/${FICHNAME}.md"
         vx-crear-resultante-from-summary ;
     } || \
     {
@@ -93,19 +95,19 @@ fi
 
 # Corregimos las rutas de las imágenes del markdown resultante:
 # "![${TEXTO_ALTERNATIVO}](~@${DIRBASE}/${IMAGEN})"
-sed -i "s#\(.*\!\[[^]]*\](\)~@\(.*\)#\1./\2#g" "${RESULTANTE}"
+sed -i "s#\(.*\!\[[^]]*\](\)~@\(.*\)#\1../$(basename "${DIRBASE}")/\2#g" "${RESULTANTE}"
 
 echo "Hecho en Markdown Total: ${RESULTANTE}"
 
 # Una vez concatenados los archivos markdown los convertimos en html y pdf:
 echo "Conversión: ${RESULTANTE} => ${FICHNAME}.html => ${FICHNAME}.pdf"
-grip "${RESULTANTE}" --export "${DIRBASE}/${FICHNAME}.html"
-sed -i "s#<title>.*</title>#<title>${TITULO}</title>#" "${DIRBASE}/${FICHNAME}.html"
+grip "${RESULTANTE}" --export "${DIRBASE_PDF}/${FICHNAME}.html"
+sed -i "s#<title>.*</title>#<title>${TITULO}</title>#" "${DIRBASE_PDF}/${FICHNAME}.html"
 # Eliminamos el título <h3> inicial que introduce grip y que falsea el TOC resultante del pandoc:
-# vx-regex-sustitucion "${FICHERO}.html" '<h3>(.|\n)* - Grip(.|\n)*</h3>' "<h3>${TITULO}</h3>"
-vx-regex-sustitucion "${DIRBASE}/${FICHNAME}.html" '<h3>(.|\n)*? - Grip(.|\n)*?</h3>' "" --save
+# vx-regex-replace "${FICHERO}.html" '<h3>(.|\n)* - Grip(.|\n)*</h3>' "<h3>${TITULO}</h3>"
+vx-regex-replace "${DIRBASE_PDF}/${FICHNAME}.html" '<h3>(.|\n)*? - Grip(.|\n)*?</h3>' "" --save
 
-echo "Hecho el HTML Total: ${DIRBASE}/${FICHNAME}.html"
+echo "Hecho el HTML Total: ${DIRBASE_PDF}/${FICHNAME}.html"
 
 # apt install pandoc texlive-xetex
 # Variables de Latex: https://pandoc.org/MANUAL.html#variables-for-latex
@@ -113,14 +115,16 @@ echo "Hecho el HTML Total: ${DIRBASE}/${FICHNAME}.html"
 # https://github.com/jgm/pandoc/wiki/User-contributed-templates
 # pandoc -f html -t latex --pdf-engine=xelatex "${FICHNAME}.html" --toc -o "${FICHNAME}.pdf"
 # Si añadimos la opción "-N" a pandoc nos autogenera numeración en las secciones: 1, 1.1, 1.2, ...
-cd "${DIRBASE}"
+cd "${DIRBASE_PDF}"
+[ ! -f "template.tex" ] && wget "https://pandoc.org/demo/template.tex"
 pandoc --template=template.tex \
 --variable margin-left=2cm \
 --variable margin-right=2cm \
 --variable fontsize=12pt \
 --variable colorlinks="blue" \
+--variable toc-title="Índice de Contenidos" \
 -f html -t latex --pdf-engine=xelatex \
 "${FICHNAME}.html" --toc -o "${FICHNAME}.pdf"
 
-echo "=> ¡¡Ya se ha generado el PDF!! \"${DIRBASE}/${FICHNAME}.pdf\""
+echo "=> ¡¡Ya se ha generado el PDF!! \"${DIRBASE_PDF}/${FICHNAME}.pdf\""
 exit 0

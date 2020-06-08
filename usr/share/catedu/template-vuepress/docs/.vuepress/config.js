@@ -1,15 +1,15 @@
 const path = require("path");
-const fs = require('fs');
+const fs = require("fs");
 
 // En el caso de haber un docs/FOOTER.md lo leemos y lo asignamos a "footer":
 // Debe usarse funciones sincronas ya que la compilación no se detiene a esperar resultados asincronos
-let footer = "Pie de por defecto ..."
+let footer = "Pie de por defecto ...";
 // Para averiguar el path de FOOTER.md debemos usar "path"
 // proccess.env.PWD nos devuelve la ruta desde donde se lanzo el proceso de compilación Vuepress
 // __dirname => /.../docs/.vuepress
-let ruta_footer = path.resolve(__dirname, '../.FOOTER.md')
+let ruta_footer = path.resolve(__dirname, "../.FOOTER.md");
 if (fs.existsSync(ruta_footer)) {
-  footer = fs.readFileSync(ruta_footer, 'utf8')
+  footer = fs.readFileSync(ruta_footer, "utf8");
 }
 
 module.exports = {
@@ -19,8 +19,8 @@ module.exports = {
   dest: "public",
   port: 8000,
   themeConfig: {
-    authors: "Equipo Técnico Vitalinux",
-    pdf: "pdfs/Curso_de_Tutores_Noveles.pdf",
+    authors: ["Equipo Técnico Vitalinux"],
+    pdf: "pdfs/vx-gitbook-to-vuepress.pdf",
     // footer: footer,
     logo: "/logos/open-book-catedu.png",
     searchPlaceholder: "Buscar",
@@ -33,13 +33,15 @@ module.exports = {
     editLinks: false,
     editLinkText: "Editar esta página en Github",
     // Barra de navegación superior:
-    nav: [{
+    nav: [
+      {
         text: "Inicio",
         link: "/",
       },
       {
         text: "Enlaces",
-        items: [{
+        items: [
+          {
             text: "Soporte",
             link: "https://soporte.vitalinux.educa.aragon.es",
           },
@@ -103,7 +105,8 @@ module.exports = {
       .use("string-replace-loader")
       .loader("string-replace-loader")
       .options({
-        multiple: [{
+        multiple: [
+          {
             search: "---(.*?)---",
             replace: (match, p1, offset, string, groups) =>
               `<span style="color: green;">${p1.toUpperCase()}</span>`,

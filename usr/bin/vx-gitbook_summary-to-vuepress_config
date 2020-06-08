@@ -105,4 +105,21 @@ echo "--- Finalizada la Obtención de Alias ---\n"
 echo -e "\n--- Fichero de configuración Final: ${CONFIGJS} ---"
 cat "${CONFIGJS}"
 echo -e "\n--- Final del Fichero de configuración: ${CONFIGJS} ---\n"
+
+# 3.3.8) Generamos el PDF y modificamos el config.js para apuntar a él:
+echo -e "--- Generamos PDF y lo copiamos en docs/.vuepress/public/pdfs/ ---"
+vx-vuepress-to-pdf "--summary" "${SUMMARY}" "${TITULO}"
+FICHPDF="${DIR_BASE_GITBOOK}/../vuepress-to-pdf/${TITULO// /_}.pdf"
+DESTINOPDF="${DIR_BASE_GITBOOK}/.vuepress/public/pdfs"
+[[ -f "${FICHPDF}" ]] && \
+{
+    [ ! -d "${DESTINOPDF}" ] && mkdir -p "${DESTINOPDF}" && \
+    echo "=> Se ha creado el dir destino: ${DESTINOPDF}"
+    cp -f "${FICHPDF}" "${DESTINOPDF}" && \
+    echo "=> Se ha copiado: ${FICHPDF} => ${DESTINOPDF}"
+    sed -i "s#pdf: .*,#pdf: \"pdfs/${TITULO// /_}.pdf\",#g" "${CONFIGJS}" ;
+} || \
+echo "¡¡Problema!! No se ha generado el PDF: ${FICHPDF}"
+echo -e "--- Fin de la generación del PDF ---"
+
 exit 0
