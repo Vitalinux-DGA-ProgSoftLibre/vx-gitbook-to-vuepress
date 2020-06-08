@@ -1,0 +1,69 @@
+#!/usr/bin/python3
+# _*_ coding: utf-8 _*_
+
+# Regex multilinea. Requiere 3 parámetros:
+# 1) Fichero 2) Patron/Regex a buscar 3) Valor de sustitución
+
+import re
+import sys
+import os
+
+
+def salir_error(otro_texto):
+    texto = "¡¡Error!! El script requiere al menos 3 parámetros:\n"
+    texto += "1) Fichero 2) Patron/Regex a buscar 3) Valor de sustitución\n"
+    texto += "Ej. vx-regex-sustitucion '/ruta/fichero' '/n#.*/n' '/n' (Elimina Comentarios)\n"
+    texto += "Si se añade al final '--save' se guardará la sustitución in-place en el archivo indicado"
+    if (otro_texto != ""):
+        texto += "\n" + otro_texto
+    print(texto)
+    os._exit(1)
+
+
+try:
+    if len(sys.argv) < 4:
+        # print("El número de argumentos es: " + str(len(sys.argv)))
+        salir_error("")
+except:
+    salir_error("")
+
+# En el número de argumentos hay que tener en cuenta que sys.argv[0] es el nombre del script:
+try:
+    mifile = sys.argv[1]
+    fichero = open(mifile)
+    contenido = fichero.read()
+except:
+    mensaje = "=> El archivo indicado como parámetro no existe: " + mifile
+    salir_error(mensaje)
+    os._exit(1)
+# Numero de caracteres que forman el fichero almacenados en contenido
+# print(len(contenido))
+# Primeros 20 caracteres de contenido
+# print(contenido[:20])
+# Para eliminar la sección Plugin { type = dclock Config { ...} }
+# miregex = 'Plugin {\n\s+type = dclock\s+Config {([^}]|\s)*}\s}'
+# Para eliminar cualquier cabecera sección Plugin { ... }
+# miregex = 'Plugin {'
+# Pasando la expresión regex como parámetro:
+miregex = sys.argv[2]
+misustitucion = sys.argv[3]
+if re.search(miregex, contenido):
+    # print("Encontrado!!")
+    replaced = re.sub(miregex, misustitucion, contenido)
+    if (len(sys.argv) > 4):
+        in_place = sys.argv[4]
+        if (in_place == "--save"):
+            try:
+                fout = open(mifile, 'w')
+                fout.write(replaced)
+            except:
+                mensaje = "=> ¡¡Error!! No hay permiso de escritura sobre el archivo ..."
+                salir_error(mensaje)
+        else:
+            print(replaced)
+    else:
+        print(replaced)
+    os._exit(0)
+else:
+    print("=> No se ha encontrado el patron/regex de sustituación en el archivo ...")
+    os._exit(1)

@@ -79,12 +79,22 @@ sed -i "s#base: .*,#base: \"/${BASE}/\",#g" "${CONFIGJS}"
     DOCSREPO="$(echo "${2}" | sed -e "s#.*://[^/]*/\(.*\)\.git#\1#g")" ;
     sed -i "s#docsRepo: .*,#docsRepo: \"${DOCSREPO}\",#g" "${CONFIGJS}" ;
 } || sed -i '/.*docsRepo: DOCSREPO,$/d' "${CONFIGJS}"
-# 3.3.6) Personalizamos los alias de Webpack:
-# Corregimos las rutas de las imagenes y configuramos los alias en Webpack en config.js
+# 3.3.6) Corregimos las rutas de las imagenes acordes a la configuración de Webpack en config.js:
 COMANDO="/usr/bin/vx-gitbook-rutas_imagenes-webpack"
 [ ! -x "${COMANDO}" ] && COMANDO="usr/bin/vx-gitbook-rutas_imagenes-webpack"
 "${COMANDO}" "${DIR_BASE_GITBOOK}"
 
+# 3.3.7) Personlizamos los alias de Webpack asociados a las imágenes anteriores:
+ALIASWEBPACK=($(grep -R ".*\!\[[^]]*\](~@[^)]*)" "${DIR_BASE_GITBOOK}" | \
+sed "s#.*\!\[[^]]*\](~@\([^/]*\).*).*#\1#g" | uniq))
+(( ${#ALIASWEBPACK[@]} > 0 )) && {
+  CONF_WEBPACK_ALIAS="{ $(for ITEM in "${ALIASWEBPACK[@]}" ; do
+    echo "\"@${ITEM}\": path.resolve(__dirname, \"../${ITEM}\"),"
+    done) }"
+  echo -e "---\nalias: ${CONF_WEBPACK_ALIAS},\n---"
+  sed -i "s#alias: ALIASWEBPACK,#alias: ${CONF_WEBPACK_ALIAS},#g" "${CONFIGJS}" ;
+}
+
 cat "${CONFIGJS}"
-echo -e "\n--Terminado--"
+echo -e "\n--- Terminado ---"
 exit 0
