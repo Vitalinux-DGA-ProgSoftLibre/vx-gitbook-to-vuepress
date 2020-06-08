@@ -112,7 +112,9 @@ sustitucion = '{\n\ttitle: "\g<1>",\n\tcollapsable: false,\n\tchildren: [\n\t\t\
 # sustitucion = '---\g<2>---'
 resultado = re.sub(regex, sustitucion, resultado)
 resultado = 'sidebar: { "/": [\n' + resultado + '\n]\n},'
+print("\n--- Sidebar generado a partir de SUMMARY.md ---")
 print(resultado)
+print("--- Final del Sidebar generado a partir de SUMMARY.md ---\n")
 
 ruta_destino = os.path.dirname(summary_file) + "/config.sidebar.json"
 destino = open(ruta_destino, "w")

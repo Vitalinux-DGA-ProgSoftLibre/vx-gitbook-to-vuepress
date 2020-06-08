@@ -44,15 +44,19 @@ for ELE in "${LISTADO[@]}" ; do
     echo "=> RUTA_IMAGEN: \"${RUTA_IMAGEN}\""
     # Comprobamos que la ruta no es de una URL de un servicio externo: https:// ftp:// mailto:// ...
     if [[ -f "${FICH}" && ! "${RUTA_IMAGEN}" =~ :// ]] ; then
-        DIRBASE="$(dirname "${RUTA_IMAGEN##/}")"
-        IMAGEN="$(basename "${RUTA_IMAGEN}")"
-        SUSTITUCION="![${TEXTO_ALTERNATIVO}](~@${DIRBASE}/${IMAGEN})"
-        # REGEX='\!\[${TEXTO_ALTERNATIVO}\](${RUTA_IMAGEN})'
-        sed -i "s;\!\[${TEXTO_ALTERNATIVO}\](${RUTA_IMAGEN});${SUSTITUCION};g" "${FICH}" && \
-        {
-            echo "=> Ruta IMAGEN Corregida: ${FICH} => \"${MARKDOWNIMG}\" : \"${SUSTITUCION}\"" ;
-        } || \
-        echo "=> ¡¡Problemas para corregir la ruta de la IMAGEN: ${FICH} : ${MARKDOWNIMG}"
+        if [ -f "${DIR_BASE_GITBOOK}/${RUTA_IMAGEN}" ] ; then
+            DIRBASE="$(dirname "${RUTA_IMAGEN##/}")"
+            IMAGEN="$(basename "${RUTA_IMAGEN}")"
+            SUSTITUCION="![${TEXTO_ALTERNATIVO}](~@${DIRBASE}/${IMAGEN})"
+            # REGEX='\!\[${TEXTO_ALTERNATIVO}\](${RUTA_IMAGEN})'
+            sed -i "s;\!\[${TEXTO_ALTERNATIVO}\](${RUTA_IMAGEN});${SUSTITUCION};g" "${FICH}" && \
+            {
+                echo "=> Ruta IMAGEN Corregida: ${FICH} => \"${MARKDOWNIMG}\" : \"${SUSTITUCION}\"" ;
+            } || \
+            echo "=> ¡¡Problemas para corregir la ruta de la IMAGEN: ${FICH} : ${MARKDOWNIMG}"
+        else
+            echo "=> ¡¡Problema!! La imagen ${RUTA_IMAGEN} no se ha podido corregir, no existe ..."
+        fi
     else
         echo "=> ¡¡Ruta IMAGEN basada en URL ... no hacemos nada!!"
     fi

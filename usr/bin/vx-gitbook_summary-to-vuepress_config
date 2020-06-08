@@ -58,15 +58,19 @@ CONFIGJS="${DIR_BASE_GITBOOK}/.vuepress/config.js"
     TEXTO="¡¡Error!! No existe el fichero ${CONFIGJS}" ;
     uso "${TEXTO}" && exit 6 ;
 }
+
 # 3.2.1) Personalizamos el title:
 sed -i "s/title: .*,/title: \"${TITULO}\",/g" "${CONFIGJS}"
+
 # 3.2.2) Personalizamos el sidebar:
 ## Para ello hacemos uso de sed para sustituir un patrón por el contenido de un fichero:
 sed -e '/sidebar: .*,/ {' -e "r ${SIDEBAR_CONFIG}" -e 'd}' -i "${CONFIGJS}"
 rm -f "${SIDEBAR_CONFIG}"
+
 # 3.2.3) Personalizamos la base o alias de la URL:
 BASE="$(basename $(dirname "${DIR_BASE_GITBOOK}"))"
 sed -i "s#base: .*,#base: \"/${BASE}/\",#g" "${CONFIGJS}"
+
 # 3.2.4) Personalizamos la URL Repo:
 [ ! -z "${2}" ] && \
 {
@@ -79,22 +83,26 @@ sed -i "s#base: .*,#base: \"/${BASE}/\",#g" "${CONFIGJS}"
     DOCSREPO="$(echo "${2}" | sed -e "s#.*://[^/]*/\(.*\)\.git#\1#g")" ;
     sed -i "s#docsRepo: .*,#docsRepo: \"${DOCSREPO}\",#g" "${CONFIGJS}" ;
 } || sed -i '/.*docsRepo: DOCSREPO,$/d' "${CONFIGJS}"
+
 # 3.3.6) Corregimos las rutas de las imagenes acordes a la configuración de Webpack en config.js:
+echo -e "\n--- Corrigiendo las rutas de las Imágenes acordes a Webpack: ---"
 COMANDO="/usr/bin/vx-gitbook-rutas_imagenes-webpack"
 [ ! -x "${COMANDO}" ] && COMANDO="usr/bin/vx-gitbook-rutas_imagenes-webpack"
 "${COMANDO}" "${DIR_BASE_GITBOOK}"
+echo -e "--- Terminada la corrección de las rutas de las Imágenes ---"
 
 # 3.3.7) Personlizamos los alias de Webpack asociados a las imágenes anteriores:
+echo -e "\n--- Obteniendo los alias para la configuración de Webpack: ---"
 ALIASWEBPACK=($(grep -R ".*\!\[[^]]*\](~@[^)]*)" "${DIR_BASE_GITBOOK}" | \
 sed "s#.*\!\[[^]]*\](~@\([^/]*\).*).*#\1#g" | uniq))
 (( ${#ALIASWEBPACK[@]} > 0 )) && {
-  CONF_WEBPACK_ALIAS="{ $(for ITEM in "${ALIASWEBPACK[@]}" ; do
-    echo "\"@${ITEM}\": path.resolve(__dirname, \"../${ITEM}\"),"
-    done) }"
-  echo -e "---\nalias: ${CONF_WEBPACK_ALIAS},\n---"
+  CONF_WEBPACK_ALIAS="{ $(for ITEM in "${ALIASWEBPACK[@]}" ; do echo "\"@${ITEM}\": path.resolve(__dirname, \"../${ITEM}\")," ; done) }"
+  echo -e "alias: ${CONF_WEBPACK_ALIAS},"
   sed -i "s#alias: ALIASWEBPACK,#alias: ${CONF_WEBPACK_ALIAS},#g" "${CONFIGJS}" ;
 }
+echo "--- Finalizada la Obtención de Alias ---\n"
 
+echo -e "\n--- Fichero de configuración Final: ${CONFIGJS} ---"
 cat "${CONFIGJS}"
-echo -e "\n--- Terminado ---"
+echo -e "\n--- Final del Fichero de configuración: ${CONFIGJS} ---\n"
 exit 0
