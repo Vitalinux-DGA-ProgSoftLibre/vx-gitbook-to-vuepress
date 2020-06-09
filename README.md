@@ -1,6 +1,30 @@
-# vx-gitbook-to-vuepress:
+# GitBook to Vuepress: vx-gitbook-to-vuepress
 
-Este paquete proporciona los scripts necesarios para convertir un curso o documentación escrita en formato GitBook a formato Vuepress. En concreto, lleva a cado las siguientes acciones:
+Este paquete DEB (Debian, Ubuntu y derivados) de software libre proporciona los scripts necesarios para convertir un curso o documentación escrita en formato GitBook a formato Vuepress.
+
+---
+
+This free software DEB package (Debian, Ubuntu and derivatives) provides the necessary scripts to convert a course or written documentation in GitBook format to Vuepress format.
+
+## ¿Cómo Instalarlo? How to install it?
+
+Para instalarlo debes descargar previamente el paquete DEB que encontrarás [aquí](http://migasfree.educa.aragon.es/repo/VX-18.04/STORES/base/). A continuación tienes un ejemplo de como hacerlo de forma automatizada, el cual puedes personalizar si lo deseas:
+
+---
+
+To install it you must previously download the DEB package that you will find [here](http://migasfree.educa.aragon.es/repo/VX-18.04/STORES/base/). Here is an example of how to do it in an automated way, which you can customize if you wish:
+
+```bash
+PAQUETE="vx-gitbook-to-vuepress_1.0-1_all.deb"
+DESTINO="~/Descargas"
+URL="http://migasfree.educa.aragon.es/repo/VX-18.04/STORES/base/${PAQUETE}"
+wget "${URL}" -P "${DESTINO}"
+sudo apt install "${DESTINO}/${PAQUETE}"
+```
+
+## ¿Como usarlo y qué hace en concreto? How to use it and what does it do specifically? Usage Example
+
+A continuación trataré de explicar paso a paso como hacer uso de los scripts que incluye el paquete y que se hace en cada uno de los pasos. Una vez instalado el paquete **vx-gitbook-to-vuepress**:
 
 1. Crea un subdirectorio **docs** donde se almacenan todos los ficheros markdown, imágenes, pdfs, ... y demás archivos que componen la documentación del GitBook a convertir.
 2. Crea un subdirectorio **docs/.vuepress** donde se almacenan todos los ficheros de configuración del tema de Vuepress: components, theme, layaut, css, etc.
