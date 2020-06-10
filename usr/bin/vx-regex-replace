@@ -32,6 +32,7 @@ try:
     mifile = sys.argv[1]
     fichero = open(mifile)
     contenido = fichero.read()
+    fichero.close()
 except:
     mensaje = "=> El archivo indicado como parámetro no existe: " + mifile
     salir_error(mensaje)
@@ -54,8 +55,9 @@ if re.search(miregex, contenido):
         in_place = sys.argv[4]
         if (in_place == "--save"):
             try:
-                fout = open(mifile, 'w')
+                fout = open(mifile, 'w+')
                 fout.write(replaced)
+                fout.close()
             except:
                 mensaje = "=> ¡¡Error!! No hay permiso de escritura sobre el archivo ..."
                 salir_error(mensaje)

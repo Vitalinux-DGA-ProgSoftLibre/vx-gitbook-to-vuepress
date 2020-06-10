@@ -8,11 +8,11 @@ Homepage: http://wiki.vitalinux.educa.aragon.es
 
 Package: vx-gitbook-to-vuepress
 Architecture: all
-Depends: ${misc:Depends}, jq, texlive-latex-base, texlive-fonts-recommended, texlive-fonts-extra, texlive-latex-extra
+Depends: ${misc:Depends}, jq, wget, pandoc, grip, curl, texlive-latex-base, texlive-fonts-recommended, texlive-fonts-extra, texlive-latex-extra
 Description: Convert GitBook to Vuepress
  Paquete creado de pasar los cursos de GitBook de Catedu a Vuepress
  .
- 1) Reemplaza ciertos plugins de Gitbook
+ 1) Transforma documentación GitBook en Vuepress
  2) Genera el archivo config.js a partir de book.json y SUMMARY.md
  3) Genera el sidebar a partir de SUMMARY.md
  4) Corrige las rutas de las imágenes acordes a la configuración de Webpack

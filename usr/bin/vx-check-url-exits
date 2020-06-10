@@ -1,0 +1,9 @@
+#!/bin/bash
+# Author: Arturo Martín Romero
+# Desc: Chequea la URL pasada como parámetro para comprobar si es una URL válida existente
+# LastAct: 2020-6-9
+
+[ -z "${1}" ] && \
+echo "=> ¡¡Error!! Debes pasar como parámetro la URL a chequear" && exit 1
+
+wget -S --spider "${1}" 2>&1 | grep -q 'HTTP/.* 200 OK' && exit 0 || exit 2

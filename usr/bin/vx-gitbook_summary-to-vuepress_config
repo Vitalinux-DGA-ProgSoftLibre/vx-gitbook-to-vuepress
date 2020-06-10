@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Uso: vx-gitbook_summary-to-vuepress_config "<DIR_BASE_GITBOOK>"
+# Uso: vx-gitbook_summary-to-vuepress_config "<DIR_BASE_GITBOOK>" "[URL_GITBOOK]"
 
 uso() {
     [ ! -z "${1}" ] && echo -e "=> ${1}"
@@ -31,11 +31,9 @@ TITULO="${TITULO[@]^}" # Ponemos la primera letra en mayuscula de cada elemento
 
 # 3) Generamos el config.js a partir del SUMMARY.md:
 CONFIGJS_TEMPLATE="/usr/share/catedu/template-vuepress/docs/.vuepress/config.js"
-[ ! -f "${CONFIGJS_TEMPLATE}" ] && CONFIGJS_TEMPLATE="usr/share/catedu/template-vuepress/docs/.vuepress/config.js"
 
-# 3.1) Generamos el sidebar del config.js del curso de Vuepress:
-COMANDO="/usr/bin/vx-gitbook_summary-to-vuepress_sidebar"
-[ ! -x "${COMANDO}" ] && COMANDO="usr/bin/vx-gitbook_summary-to-vuepress_sidebar"
+# 3.1) Generamos el sidebar del config.js del curso de Vuepress a partir del SUMMARY.md:
+COMANDO="vx-gitbook_summary-to-vuepress_sidebar"
 vx-gitbook_summary-to-vuepress_sidebar "${SUMMARY}"
 SIDEBAR_CONFIG="${DIR_BASE_GITBOOK}/config.sidebar.json"
 [ ! -f "${SIDEBAR_CONFIG}" ] && \
@@ -86,21 +84,21 @@ sed -i "s#base: .*,#base: \"/${BASE}/\",#g" "${CONFIGJS}"
 
 # 3.3.6) Corregimos las rutas de las imagenes acordes a la configuración de Webpack en config.js:
 echo -e "\n--- Corrigiendo las rutas de las Imágenes acordes a Webpack: ---"
-COMANDO="/usr/bin/vx-gitbook-rutas_imagenes-webpack"
-[ ! -x "${COMANDO}" ] && COMANDO="usr/bin/vx-gitbook-rutas_imagenes-webpack"
+COMANDO="vx-gitbook-rutas_imagenes-webpack"
 "${COMANDO}" "${DIR_BASE_GITBOOK}"
 echo -e "--- Terminada la corrección de las rutas de las Imágenes ---"
 
-# 3.3.7) Personlizamos los alias de Webpack asociados a las imágenes anteriores:
+# 3.3.7) Personalizamos los alias de Webpack asociados a las imágenes anteriores:
 echo -e "\n--- Obteniendo los alias para la configuración de Webpack: ---"
 ALIASWEBPACK=($(grep -R ".*\!\[[^]]*\](~@[^)]*)" "${DIR_BASE_GITBOOK}" | \
-sed "s#.*\!\[[^]]*\](~@\([^/]*\).*).*#\1#g" | uniq))
+sed "s#.*\!\[[^]]*\](~@\([^/]*\).*).*#\1#g" | sort | uniq))
 (( ${#ALIASWEBPACK[@]} > 0 )) && {
   CONF_WEBPACK_ALIAS="{ $(for ITEM in "${ALIASWEBPACK[@]}" ; do echo "\"@${ITEM}\": path.resolve(__dirname, \"../${ITEM}\")," ; done) }"
   echo -e "alias: ${CONF_WEBPACK_ALIAS},"
-  sed -i "s#alias: ALIASWEBPACK,#alias: ${CONF_WEBPACK_ALIAS},#g" "${CONFIGJS}" ;
+  #   sed -i "s#alias: ALIASWEBPACK,#alias: ${CONF_WEBPACK_ALIAS},#g" "${CONFIGJS}" ;
+  vx-regex-replace "${CONFIGJS}" 'alias: ALIASWEBPACK,' "alias: ${CONF_WEBPACK_ALIAS}," "--save" ;
 }
-echo "--- Finalizada la Obtención de Alias ---\n"
+echo -e "--- Finalizada la Obtención de Alias ---\n"
 
 echo -e "\n--- Fichero de configuración Final: ${CONFIGJS} ---"
 cat "${CONFIGJS}"

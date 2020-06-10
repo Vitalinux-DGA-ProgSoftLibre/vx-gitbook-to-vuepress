@@ -1,0 +1,41 @@
+#!/bin/bash
+# Ultima modificación: [arturo@2020-4-1]
+# Desc: Funciones útiles para la conversión de GitBook a Vuepress
+
+vx-echoerr() {
+    echo -e "${*}" 1>&2
+}
+
+vx-check_url_exits() {
+    [ -z "${1}" ] && \
+    echo "=> ¡¡Error!! Debes pasar como parámetro la URL a chequear" && return 1
+    wget -S --spider "${1}" 2>&1 | grep -q 'HTTP/.* 200 OK' && return 0 || return 2
+}
+
+vx-check_github_gitbook() {
+    # Desc: Recibe como parametro una URLREPO e informa de si es un repo GitBook válido:
+    # URLREPO => https://github.com/catedu/curso-moodle.git
+    # Nombre de dominio: github.com => sed "s#^.*://\([^/]*\)/\([^/]*\)/\([^/]*\).*#\1#"
+    # Usuario Git: catedu => sed "s#^.*://\([^/]*\)/\([^/]*\)/\([^/]*\).*#\2#"
+    # Repo Git: curso-moodle => sed "s#^.*://\([^/]*\)/\([^/]*\)/\([^/]*\).*#\3#"
+    local URLREPO="${1}"
+    local USUARIO="$(echo "${URLREPO}" | sed "s#^.*://\([^/]*\)/\([^/]*\)/\([^/]*\).*#\2#")"
+    local REPO="$(echo "${URLREPO}" | sed "s#^.*://\([^/]*\)/\([^/]*\)/\([^/]*\)\.git.*#\3#")"
+    local URLSUMMARY="https://raw.githubusercontent.com/${USUARIO}/${REPO}/master/SUMMARY.md"
+    local URLBOOKJSON="https://raw.githubusercontent.com/${USUARIO}/${REPO}/master/book.json"
+    # echo "=> Va a chequearse: ${BASEURL}/${USUARIO}/${REPO}/git/trees/master?recursive=1"
+    # LISTA_ARCHIVOS_REPO=( $(curl -u "${CLIENT_OUTH_APP}" "${BASEURL}/${USUARIO}/${REPO}/git/trees/master?recursive=1" | \
+    # jq -r ".tree[].path") )
+    # [[ " ${LISTA_ARCHIVOS_REPO[@]} " =~ " SUMMARY.md " &&  \
+    # " ${LISTA_ARCHIVOS_REPO[@]} " =~ " book.json " ]] && return 0 || return 1
+    vx-echoerr "=> Chequeamos: ${URLSUMMARY} y ${URLBOOKJSON}"
+    if vx-check_url_exits "${URLSUMMARY}" && vx-check_url_exits "${URLBOOKJSON}" ; then
+        vx-echoerr "=> Repo válido: ${URLREPO}"
+        return 0
+    else
+        vx-echoerr "=> Repo inválido: ${URLREPO}"
+        return 1
+    fi
+}
+
+"$@" 2> /dev/null

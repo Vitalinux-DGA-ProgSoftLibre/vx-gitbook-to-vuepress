@@ -4,42 +4,67 @@
 # https://developer.github.com/v3/
 
 # Posibles consultas interesantes:
-# curl -s "https://api.github.com/users/${USER}/repos?type=all&per_page=100" -H "Authorization: token ${AUTH}" | jq '. | length'
+# 1) Lista de repositorios públicos o privados de un usuario de GitHub:
+# curl -u "${CLIENT_OUTH_APP}" "${APIGITCATEDU}${CONT}" 2> /dev/null \
+# | jq -r '.[] | .name'
+# curl -s "https://api.github.com/users/${USER}/repos?type=all&per_page=100" \
+# -H "Authorization: token ${AUTH}" | jq '. | length'
 # curl -X GET https://api.github.com/users/<myuser>/repos\?type=all
-
-PREFIJO="https://github.com/catedu/"
-SUFIJO=".git"
+# 2) Obtener el listado completo de archivos que componen un repositorio:
+# curl -u "${CLIENT_OUTH_APP}" "https://api.github.com/repos/${USUARIO}/${REPO}/git/trees/master?recursive=1" | \
+# jq -r ".tree[].path"
+# 3) Mostrar el contenido (raw) de un determinado archivo de un repositorio:
+# curl "https://raw.githubusercontent.com/catedu/senderismo/master/book.json"
+# 4) Obtener información sobre un determinado fichero de un repositorio de GitHub:
+# curl "https://api.github.com/repos/catedu/senderismo/contents/book.json"
 
 uso() {
     echo -e "=> La llamada al script sin parametros devuelve la lista \
-del nombre de todos los cursos de CATEDU:
-    vx-catedu-obtener-lista-repos-github
-    curso_moodle senderismo robotica ...
-=> Si le pasamos como parámetro [--url|-u] devuelve la lista de URLs de los repositorios \
-asociados a los cursos cursos de CATEDU:
-    vx-catedu-obtener-lista-repos-github --url
-    ${PREFIJO}curso_moodle${SUFIJO} ${PREFIJO}senderismo${SUFIJO} ..."
+de todas las URLs de todos los repositorios de tipo GitBook de CATEDU:
+Ej. vx-catedu-obtener-lista-repos-github
+    "
 }
 
-
-REGEX='^-u$|^--url$'
-[[ ! -z "${1}" && ! "${1}" =~ ${REGEX} ]] && uso && exit 1
+echoerr() {
+    echo -e "${*}" 1>&2
+}
 
 LISTADO_CURSOS=()
+LISTADO_CURSOS_GITBOOK=()
+PREFIJO="https://github.com/catedu/"
+SUFIJO=".git"
 
 urls_cursos_catedu() {
     for NUM in $(seq 0 ${#LISTADO_CURSOS[@]}) ; do
         [ -z "${LISTADO_CURSOS[${NUM}]}" ] && continue
         LISTADO_CURSOS[${NUM}]="${PREFIJO}${LISTADO_CURSOS[${NUM}]}${SUFIJO}"
+        # Comprobamos si el repo es un repo GitBook (con SUMMARY.md y book.json):
+        vx-funcs-gitbook vx-check_github_gitbook "${LISTADO_CURSOS[${NUM}]}" && \
+        {
+            LISTADO_CURSOS_GITBOOK+=( "${LISTADO_CURSOS[${NUM}]}" )
+            echoerr "=> Curso GitBook válido: '${LISTADO_CURSOS[${NUM}]}'" ;
+        } || \
+        echoerr "=> No GitBook: '${LISTADO_CURSOS[${NUM}]}'" ;
     done
 }
 
+TOKEN_GITHUB_CATEDU_READ_PUBLIC="9698115ec67b81a33cb394fcd0396e51cdc6f68c"
 for CONT in {1..10} ; do
     NCURSOS="${#LISTADO_CURSOS[@]}"
-    LISTADO_CURSOS+=($(curl "https://api.github.com/users/catedu/repos?per_page=100&page=${CONT}" | jq -r '.[] | .name'))
+    LISTADO_CURSOS+=($(curl -H "Authorization: token ${TOKEN_GITHUB_CATEDU_READ_PUBLIC}" \
+            "https://api.github.com/users/catedu/repos?per_page=100&page=${CONT}" 2> /dev/null \
+    | jq -r '.[] | .name'))
+    
     # Comprobamos si el curl devolvió más cursos por página o ya no quedan por listar:
     (( NCURSOS == ${#LISTADO_CURSOS[@]} )) && break
+    # echo "=> Ya van $(expr ${CONT} '*' 100) repositorios de catedu ..."
 done
 
-[[ "${1}" =~ ${REGEX} ]] && urls_cursos_catedu
-echo "${LISTADO_CURSOS[@]}" | tr -s " " "\n"
+echo "Repos Catedu: ${LISTADO_CURSOS[*]}"
+echoerr "=> Se han localizado: ${#LISTADO_CURSOS[@]} repos públicos en catedu"
+echoerr "=> Se va a comprobar cuales son repos de GitBook"
+# [[ "${1}" =~ ${REGEX} ]] && urls_cursos_catedu
+urls_cursos_catedu
+# echo "${LISTADO_CURSOS[@]}" | tr -s " " "\n"
+echo "${LISTADO_CURSOS_GITBOOK[@]}" | tr -s " " "\n"
+echoerr "\nTotal Repos CATEDU: ${#LISTADO_CURSOS[@]} - GitBooks: ${#LISTADO_CURSOS_GITBOOK[@]}"

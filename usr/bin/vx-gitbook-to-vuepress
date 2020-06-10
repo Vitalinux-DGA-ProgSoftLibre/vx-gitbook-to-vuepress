@@ -2,21 +2,33 @@
 
 uso() {
     [ ! -z "${1}" ] && echo -e "=> ${1}"
-    echo -e "=> Debes pasar como parámetro la URL o URLs de los repositorio de \
+    echo -e "=> El script 'vx-gitbook-to-vuepress' admite las siguientes opciones, en \
+función del valor del primer parámetro que se pasa:
+
+1) '--url': Puedes pasar como parámetros la URL o URLs de los repositorio de \
 GitLab, GitHub, ... donde se localizan los GitBooks a convertir a formato Vuepress.
-Para el caso particular de los cursos o documentación de CATEDU se puede pasar \
-directamente el parámetro --all-github-cursos-catedu y el script se encargará de \
-buscar todos los repositorios públicos de documentación escrita en formato GitBook \
-existen para pasarlos a formato Vuepress
-Por Ejemplo:
-vx-gitbook-to-vuepress https://github.com/catedu/curso-moodle https://github.com/catedu/curso_de_edmodo ...
+2) '--dir': Puedes pasar como parámetro la ruta de un directorio del sistema \
+cuyto contenido se corresponde con el de un GitBook que quieres pasar a formato \
+Vuepress. El script generará en junto a directorio que se indique otro con el \
+mismo nombre precedido de 'vuepress-<nombre_dir_indicado>' donde se localizará toda \
+la documentación Vuepress resultante.
+3) '--all-github-cursos-catedu': Útil para el caso particular de los cursos GitBook \
+de CATEDU.  El script se encargará de rastrear todos los repositorios públicos de CATEDU \
+para averiguar cuales son correspondientes a GitBook y pasarlos a formato Vuepress.
+
+Opcionalmente, se puede indicar como primer parámetro '--npm-install-build'. Esto hará \
+que tras la conversión de GitBook a Vuepress se instalarán todos los paquetes npm \
+necesarios y se construirá la aplicación final para producción bajo un subdirectorio \
+llamado 'public'.
+
+Ejemplo de uso:
+vx-gitbook-to-vuepress --url https://github.com/catedu/curso-moodle https://github.com/catedu/curso_de_edmodo ...
 vx-gitbook-to-vuepress --all-github-cursos-catedu
+vx-gitbook-to-vuepress --dir '/home/usuario/Descargas/curso-moodle' '~/Documentos/curso-vitalinux'
+vx-gitbook-to-vuepress --npm-install-build --url https://github.com/catedu/curso-moodle
+vx-gitbook-to-vuepress --npm-install-build --all-github-cursos-catedu
     "
 }
-
-LISTADO_CURSOS=()
-
-[ -z "${1}" ] && uso && exit 1
 
 check_repos() {
     until [ -z "${1}" ] ; do
@@ -31,49 +43,125 @@ check_repos() {
     done
 }
 
-# Generamos el comando de pruebas en desarrollo del script:
-COMANDO="/usr/bin/vx-catedu-obtener-lista-repos-github"
-[ ! -x "${COMANDO}" ] && COMANDO="usr/bin/vx-catedu-obtener-lista-repos-github"
-
-[[ "${1}" == "--all-github-cursos-catedu" ]] && \
-LISTADO_CURSOS=($(${COMANDO} --url)) || \
-{
-    check_repos "${@}"
-}
-
-echo "=> Listado de cursos a convertir a formato Vuepress:"
-echo "${LISTADO_CURSOS[@]}" | tr -s " " "\n"
-echo "Fin del listado: ${#LISTADO_CURSOS[@]}"
-
-PLANTILLA="/usr/share/catedu/template-vuepress"
-[ ! -d "${PLANTILLA}" ] && PLANTILLA="usr/share/catedu/template-vuepress"
-for CURSO in "${LISTADO_CURSOS[@]}" ; do
-    # Extraemos el nombre del repo y creamos un DIR donde volcar el repo y darle formato Vuepress:
-    NOMBRE="$(basename "${CURSO}" | awk -F ".git" '{ print $1 }')"
-    [ -d "${NOMBRE}" ] && \
-    {
-        TEXTO="=> ¡¡Ya existe un directorio con el nombre: ${NOMBRE}!!"
-        TEXTO+=" Se hara uso del existente ..."
-        echo "${TEXTO}" ;
-    } || \
-    {
-        mkdir -p "${NOMBRE}/docs" && \
+gitbook_to_vuepress_by_url() {
+    echo -e "--- Listado de cursos/documentaciones a convertir a formato Vuepress: ---"
+    echo "${LISTADO_CURSOS[@]}" | tr -s " " "\n"
+    echo -e "--- Fin del listado: ${#LISTADO_CURSOS[@]} Cursos/Documentaciones ---\n"
+    for CURSO in "${LISTADO_CURSOS[@]}" ; do
+        DIR_ORIGINAL="$(pwd)"
+        # Extraemos el nombre del repo y creamos un DIR donde volcar el repo y darle formato Vuepress:
+        NOMBRE="$(basename "${CURSO}" | awk -F ".git" '{ print $1 }')"
+        [ -d "${NOMBRE}" ] && \
         {
-            git clone "${CURSO}" "${NOMBRE}/docs"
+            TEXTO="=> ¡¡Ya existe un directorio con el nombre: ${NOMBRE}!!"
+            TEXTO+=" Se hara uso del existente ..."
+            echo "${TEXTO}" ;
         } || \
         {
-            TEXTO="Problemas para crear el directorio ${NOMBRE} ... ¿Permisos?"
-            uso "${TEXTO}" && exit 1 ;
-        } ;
+            mkdir -p "${NOMBRE}/docs" && \
+            {
+                git clone "${CURSO}" "${NOMBRE}/docs"
+            } || \
+            {
+                TEXTO="Problemas para crear el directorio ${NOMBRE} ... ¿Permisos?"
+                uso "${TEXTO}" && exit 1 ;
+            } ;
+        }
+        local PLANTILLA="/usr/share/catedu/template-vuepress"
+        # Renombramos el FOOTER.md => .FOOTER.md para evitar problemas al renderizar HTML:
+        [ -f "${NOMBRE}/docs/FOOTER.md" ] && \
+        mv "${NOMBRE}/docs/FOOTER.md" "${NOMBRE}/docs/.FOOTER.md" && \
+        echo "=> Se ha renombrado: 'FOOTER.md' => '.FOOTER.md'"
+        # Copiamos la estructura de la plantilla de un curso Vuepress:
+        rsync -ahv "${PLANTILLA}/"* "${NOMBRE}/" ;
+        # Uso: vx-gitbook_summary-to-vuepress_config "<DIR_BASE_GITBOOK>"
+        COMANDO="vx-gitbook_summary-to-vuepress_config"
+        "${COMANDO}" "${NOMBRE}/docs" "${CURSO}"
+        cd "${DIR_ORIGINAL}"
+        if "${NPM_INSTALL_BUILD}" && [ -f "${NOMBRE}/package.json" ] ; then
+            cd "${NOMBRE}"
+            npm install
+            npm run build ;
+            cd "${DIR_ORIGINAL}"
+        fi
+    done
+}
+
+LISTADO_CURSOS=()
+REGEX1='^--dir$|^--url$|^--all-github-cursos-catedu$|^--npm-install-build$'
+REGEX2='^--dir$|^--url$|^--all-github-cursos-catedu$'
+[[ -z "${2}" || ! "${1}" =~ ${REGEX1} ]] && uso && exit 1
+[[ "${1}" == "--npm-install-build" && ! "${2}" =~ ${REGEX2} ]] && uso && exit 2
+[[ "${1}" == "--npm-install-build" && -z "${3}" ]] && uso && exit 3
+
+# Pasamos a comprobar de que tipo es el primer parámetro:
+# 0) Comprobamos si se pasa como parámetro la opción de npm isntall y build:
+NPM_INSTALL_BUILD="false"
+[[ "${1}" == "--npm-install-build" ]] && NPM_INSTALL_BUILD="true" && shift
+
+# 1) Comprobamos si el primer parámetro es "--all-github-cursos-catedu":
+if [[ "${1}" == "--all-github-cursos-catedu" ]] ; then
+    echo -e "\n--- Vamos a obtener la lista de repositorios de Catedu: ---"
+    COMANDO="vx-catedu-obtener-lista-repos-github"
+    LISTADO_CURSOS=($(${COMANDO})) ;
+    echo -e "--- Fin de la obtención de repositorios de Catedu ---\n"
+    gitbook_to_vuepress_by_url
+fi
+
+# 2) Comprobamos si el primer parámetro es de tipo URL:
+if [[ "${1}" == "--url" ]] ; then
+    # ^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+$
+    REGEX='^(https?|ftp)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]\.[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]$'
+    until [ -z "${1}" ] ; do
+        if [[ "${1}" =~ ${REGEX} ]] ; then
+            if vx-funcs-gitbook vx-check_github_gitbook "${1}" ; then
+                echo "=> ${1}: Repo GitBook válido"
+                # Añadimos el repo al array de la lista de repos LISTADO_CURSOS:
+                check_repos "${1}"
+            fi
+        fi
+        shift
+    done
+    gitbook_to_vuepress_by_url
+fi
+
+# 3) Comprobamos si el primer parámetro es de tipo path/dir:
+if [[ "${1}" == "--dir" ]] ; then
+    DIR_GITBOOK="${2}"
+    [[ ! -d "${DIR_GITBOOK}" ]] && \
+    {
+        echo "¡¡Error!! No existe el directorio: '${DIR_GITBOOK}'"
+        exit 4 ;
     }
+    [[ ! -f "${DIR_GITBOOK}/SUMMARY.md" || ! -f "${DIR_GITBOOK}/book.json" ]] && \
+    {
+        echo "¡¡Error!! No es un directorio valido: '${DIR_GITBOOK}'."
+        echo "No existe '${DIR_GITBOOK}/SUMMARY.md' o '${DIR_GITBOOK}/book.json'"
+        exit 5 ;
+    }
+    DIR_ORIGINAL="$(pwd)"
+    DIR_BASE="$(dirname "${2}")"
+    DIR_VUEPRESS="${DIR_BASE}/vuepress-${DIR_GITBOOK// /_}"
+    [ ! -d "${DIR_VUEPRESS}" ] && mkdir -p "${DIR_VUEPRESS}/docs"
+    # Sincronizamos el contenido del GitBook en el docs de Vuepress:
+    rsync -ahv "${DIR_GITBOOK}/" "${DIR_VUEPRESS}/docs"
     # Renombramos el FOOTER.md => .FOOTER.md para evitar problemas al renderizar HTML:
-    [ -f "${NOMBRE}/docs/FOOTER.md" ] && \
-    mv "${NOMBRE}/docs/FOOTER.md" "${NOMBRE}/docs/.FOOTER.md" && \
+    [ -f "${DIR_VUEPRESS}/docs/FOOTER.md" ] && \
+    mv "${DIR_VUEPRESS}/docs/FOOTER.md" "${DIR_VUEPRESS}/docs/.FOOTER.md" && \
     echo "=> Se ha renombrado: 'FOOTER.md' => '.FOOTER.md'"
-    # Copiamos la estructura de la plantilla de un curso Vuepress:
-    rsync -ahv "${PLANTILLA}/"* "${NOMBRE}/" ;
-    # Uso: vx-gitbook_summary-to-vuepress_config "<DIR_BASE_GITBOOK>"
-    COMANDO="/usr/bin/vx-gitbook_summary-to-vuepress_config"
-    [ ! -x "${COMANDO}" ] && COMANDO="usr/bin/vx-gitbook_summary-to-vuepress_config"
-    "${COMANDO}" "${NOMBRE}/docs" "${CURSO}"
-done
+    # Copiamos la estructura de la plantilla de un curso/documentación en Vuepress:
+    PLANTILLA="/usr/share/catedu/template-vuepress"
+    rsync -ahv "${PLANTILLA}/"* "${DIR_VUEPRESS}/" ;
+    # Generamos el config.js a partir el SUMMARY.md y book.json:
+    # Uso: vx-gitbook_summary-to-vuepress_config "<DIR_BASE_GITBOOK>" "[URL_GIT]"
+    COMANDO="vx-gitbook_summary-to-vuepress_config"
+    "${COMANDO}" "${DIR_VUEPRESS}/docs"
+    cd "${DIR_ORIGINAL}"
+    if "${NPM_INSTALL_BUILD}" && [ -f "${DIR_VUEPRESS}/package.json" ] ; then
+        cd "${DIR_VUEPRESS}"
+        npm install
+        npm run build ;
+        cd "${DIR_ORIGINAL}"
+    fi
+fi
+exit 0
