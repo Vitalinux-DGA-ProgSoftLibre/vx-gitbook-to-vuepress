@@ -15,7 +15,7 @@ Para instalarlo debes descargar previamente el paquete DEB que encontrarás [aqu
 To install it you must previously download the DEB package that you will find [here](http://migasfree.educa.aragon.es/repo/VX-18.04/STORES/base/). Here is an example of how to do it in an automated way, which you can customize if you wish:
 
 ```bash
-PAQUETE="vx-gitbook-to-vuepress_1.0-1_all.deb"
+PAQUETE="vx-gitbook-to-vuepress_1.0-2_all.deb"
 DESTINO="~/Descargas"
 URL="http://migasfree.educa.aragon.es/repo/VX-18.04/STORES/base/${PAQUETE}"
 wget "${URL}" -P "${DESTINO}"
