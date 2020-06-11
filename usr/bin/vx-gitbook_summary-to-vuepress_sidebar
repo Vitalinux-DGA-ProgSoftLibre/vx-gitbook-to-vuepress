@@ -142,11 +142,11 @@ def buscar_childrens_n1(subtitles):
                     subtitulos.append(seccion_n3)
                     subtitulos_n2 = []
             nivel = 1
-            if len(subtitulos) > 0:
-                # Cada vez que encontramos un subtítulo de nivel uno,
-                # guardamos en resultado_subtitulos lo que llevamos hasta el momento:
-                resultado_subtitulos += ",\n".join(subtitulos)
-                subtitulos = []
+            # if len(subtitulos) > 0:
+            #     # Cada vez que encontramos un subtítulo de nivel uno,
+            #     # guardamos en resultado_subtitulos lo que llevamos hasta el momento:
+            #     resultado_subtitulos += ",\n".join(subtitulos)
+            #     subtitulos = []
             children_n1 = re.search(regex_childrens_n1, linea)
             if children_n1.group("md") == "README.md":
                 ruta = "/"
