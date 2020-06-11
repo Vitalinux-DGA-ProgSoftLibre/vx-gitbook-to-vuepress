@@ -28,17 +28,19 @@ summary_file = sys.argv[1]
 try:
     fichero = open(summary_file)
     contenido = fichero.read()
+    fichero.close()
 except:
     mensaje = "=> El archivo indicado como parámetro no existe: " + summary_file
     salir_error(mensaje)
     os._exit(1)
 
-# Comprobamos si hay separardores en el summary.md: "___" => "## Otros"
-regex = '\n___'
-sustitucion = "## Otros ..."
+# 1) Eliminamos los separadores del sidebar de GitBook en el SUMMARY.md: "___":
+# sustitucion = "## Otros ..."
+sustitucion = '\n'
+regex = '\n___*\n'
 contenido = re.sub(regex, sustitucion, contenido)
 
-# Eliminamos líneas en blanco:
+# 2) Eliminamos líneas en blanco:
 # with open('path/to/file') as infile, open('output.txt', 'w') as outfile:
 #     for line in infile:
 #         if not line.strip():
@@ -49,76 +51,191 @@ for operacion in lista:
     regex = operacion.split(":")[0]
     sustitucion = operacion.split(":")[1]
     contenido = re.sub(regex, sustitucion, contenido)
-# print(contenido)
-# print("--- Terminado ---")
-# os._exit(0)
-regex = '#+[^#]*'
-# trozos = re.split(regex, contenido)
-trozos = re.findall(regex, contenido)
-ntrozos = len(trozos)
 
-for ntrozo in range(0, ntrozos):
-    encontrado = False
-    regex = ' +\* +\[.*?\]\(.*?\)'
-    trozos2 = re.findall(regex, trozos[ntrozo])
-    ntrozos2 = len(trozos2)
-    for ntrozo2 in range(0, ntrozos2):
-        regex = ' +\* +\[(.*?)\]\(.*?\)'
-        titulo_search = re.search(regex, trozos2[ntrozo2])
-        regex = ' +\* +\[.*?\]\((.*?)\)'
-        ruta_search = re.search(regex, trozos2[ntrozo2])
-        if titulo_search and ruta_search:
-            titulo = titulo_search.group(1)
-            ruta = ruta_search.group(1)
-            encontrado = True
-        if encontrado:
-            regex = ' +\* +\[' + titulo + '\]\(' + ruta + '\)'
-            sustitucion = '---[\"' + ruta + '\",\"' + titulo + '\"],---'
-            trozos[ntrozo] = re.sub(regex, sustitucion, trozos[ntrozo])
-        else:
-            sustitucion = ';;;'
-        # trozos2[ntrozo2] = re.sub(regex, sustitucion, trozos2[ntrozo2])
+# En la variable resultado almacenaremos el sidebar resultante:
+resultado = ""
+seccion = """{
+    title: "titulo1",
+    collapsable: false,
+    //sidebarDepth: 0,
+    children: [
+                childrens
+    ],
+} """
+# Creamos una seccion_sin_titulo para childrens de algún children (titulos anidados):
+seccion_sin_titulo = """{
+    title: "",
+    collapsable: false,
+    children: [
+                childrens
+    ],
+} """
 
-# for trozo in trozos:
-#     print("=> " + trozo)
-# Convertimos la lista de trozos en una cadena y la mostramos:
-resultado = ''.join(trozos)
-regex = ',---\n---'
-sustitucion = ',\n'
-resultado = re.sub(regex, sustitucion, resultado)
-regex = '---(?P<trozo>\[(.|\n)*?\]),---'
-sustitucion = '{\n\ttitle: "",\n\tcollapsable: false,\n\tchildren: [\n\t\t\g<1>\n\t]\n},'
-resultado = re.sub(regex, sustitucion, resultado)
 
-# Titulos de primer nivel:
-regex = '\n\* *\[(.*?)\]\((.*?)\)'
-sustitucion = '\n[\"\g<2>\",\"\g<1>\"],'
-resultado = re.sub(regex, sustitucion, resultado)
+# 3) Extraemos la cabecera "summary":
+regex = '# +(Summary|SUMMARY|summary)(?P<g1>[^#]*)(?P<g2>(\s|.)*)'
+if re.search(regex, contenido):
+    busqueda = re.search(regex, contenido)
+    parte1 = busqueda.group("g1")
+    parte2 = "\n" + busqueda.group("g2")
+else:
+    print("¡¡Error!! No hay encabezado '# Summary' ... esta mal construido")
+    os._exit(5)
 
-# Terminamos con los títulos principales:
-# regex = '# *[Ss][Uu][Mm][Mm][Aa][Rr][Yy]\s*?(.*?)##'
-regex = '# *[Ss][Uu][Mm][Mm][Aa][Rr][Yy]\s*([^#]*)'
-sustitucion = '{\n\ttitle: "Índice de Contenidos",\n\tcollapsable: false,\n\tsidebarDepth: 0,\n\tchildren: [\n\t\t\g<1>\t]\n},\n'
-resultado = re.sub(regex, sustitucion, resultado)
-regex = 'README'
-sustitucion = '/'
-resultado = re.sub(regex, sustitucion, resultado)
-regex = '\.md'
-sustitucion = ''
-resultado = re.sub(regex, sustitucion, resultado)
+titulo1 = "Indice de Contenidos"
+# Buscamos títulos de nivel 1 mediante re.findall:
+# re.findall => devuelve un array con todos los casos encontrados
+# Al hacer uso de grupos, cada elemento de un array tiene tantas componente como grupos
+# regex_childrens_n1 = '\n\*\s{1}\[.*?\]\(.*?\)'
+regex_childrens_n1 = '\n\*\s{1}\[(?P<titulo>.*?)\]\((?P<md>.*?)\)'
+childrens_n1 = re.findall(regex_childrens_n1, parte1)
+# En childrens almacenaremos al string resultante de sustitución:
+childrens = ""
+for children in childrens_n1:
+    # Comprobamos si el grupo 2 <md> es "README.md", al asociarse la root a él:
+    if children[1] == "README.md":
+        ruta = "/"
+    else:
+        ruta = children[1]
+    titulo2 = children[0]
+    childrens += '["' + ruta + '","' + titulo2 + '"],'
+seccion_parte1 = seccion
+seccion_parte1 = re.sub('titulo1', titulo1, seccion_parte1)
+seccion_parte1 = re.sub('childrens', childrens, seccion_parte1)
 
-regex = '##\s+(.*?)\n+?([^#]*)'
-sustitucion = '{\n\ttitle: "\g<1>",\n\tcollapsable: false,\n\tchildren: [\n\t\t\g<2>\t]\n},\n'
-# sustitucion = '---\g<2>---'
-resultado = re.sub(regex, sustitucion, resultado)
-resultado = 'sidebar: { "/": [\n' + resultado + '\n]\n},'
-print("\n--- Sidebar generado a partir de SUMMARY.md ---")
-print(resultado)
-print("--- Final del Sidebar generado a partir de SUMMARY.md ---\n")
+# print("=> La parte1 es: " + parte1)
+# print("=> Children1 es: " + str(len(childrens_n1)) +
+#       " : " + childrens_n1[0][0])
+# print("=> Mi seccion: " + seccion_parte1)
+
+
+resultado += seccion_parte1
+print("=> resultado parte 1:\n" + seccion_parte1)
+
+
+def buscar_childrens_n1(subtitles):
+    resultado_subtitulos = ""
+    lineas = subtitles.split("\n")
+    subtitulos = []
+    subtitulos_n2 = []
+    subtitulos_n3 = []
+    nivel = 1
+    # Comprobamos línea a línea de que nivel es el subtitulo:
+    for linea in lineas:
+        # Subtitulo de nivel 1:
+        regex_childrens_n1 = '^\*\s{1}\[(?P<titulo>.*?)\]\((?P<md>.*?)\)'
+        if re.search(regex_childrens_n1, linea):
+            print("> Subtitulo de nivel 1: " + linea)
+            # Miramos si venimos de un nivel de subtitulo superior:
+            if nivel > 1:
+                # En ese caso guardamos lo que tengamos de niveles superiores:
+                if len(subtitulos_n3) > 0:
+                    seccion_n3 = seccion_sin_titulo
+                    childrens = ",\n".join(subtitulos_n3)
+                    seccion_n3 = re.sub('childrens', childrens, seccion_n3)
+                    subtitulos_n2.append(seccion_n3)
+                    subtitulos_n3 = []
+                if len(subtitulos_n2) > 0:
+                    seccion_n2 = seccion_sin_titulo
+                    childrens = ",\n".join(subtitulos_n2)
+                    seccion_n3 = re.sub('childrens', childrens, seccion_n3)
+                    subtitulos.append(seccion_n3)
+                    subtitulos_n2 = []
+            nivel = 1
+            if len(subtitulos) > 0:
+                # Cada vez que encontramos un subtítulo de nivel uno,
+                # guardamos en resultado_subtitulos lo que llevamos hasta el momento:
+                resultado_subtitulos += ",\n".join(subtitulos)
+                subtitulos = []
+            children_n1 = re.search(regex_childrens_n1, linea)
+            if children_n1.group("md") == "README.md":
+                ruta = "/"
+            else:
+                ruta = children_n1.group("md")
+            titulo2 = children_n1.group("titulo")
+            subtitulos.append('["' + ruta + '","' + titulo2 + '"]')
+            print(">>> subtitulos_n1: " + ",\n".join(subtitulos))
+            continue
+        # Subtitulo de nivel 2:
+        regex_childrens_n2 = '^\s{1}\*\s{1}\[(?P<titulo>.*?)\]\((?P<md>.*?)\)'
+        if re.search(regex_childrens_n2, linea):
+            print("> Subtitulo de nivel 2" + linea)
+            if nivel > 2:
+                # En ese caso guardamos lo que tengamos de niveles superiores:
+                if len(subtitulos_n3) > 0:
+                    seccion_n3 = seccion_sin_titulo
+                    childrens = ",\n".join(subtitulos_n3)
+                    seccion_n3 = re.sub('childrens', childrens, seccion_n3)
+                    subtitulos_n2.append(seccion_n3)
+                    subtitulos_n3 = []
+            nivel = 2
+            children_n2 = re.search(regex_childrens_n2, linea)
+            if children_n2.group("md") == "README.md":
+                ruta = "/"
+            else:
+                ruta = children_n2.group("md")
+            titulo2 = children_n2.group("titulo")
+            subtitulos_n2.append('["' + ruta + '","' + titulo2 + '"]')
+            print(">>> subtitulos_n2: " + ",\n".join(subtitulos_n2))
+            continue
+        # Subtitulo de nivel 3:
+        regex_childrens_n3 = '^\s{2,}\*\s{1}\[(?P<titulo>.*?)\]\((?P<md>.*?)\)'
+        if re.search(regex_childrens_n3, linea):
+            print("> Subtitulo de nivel 3" + linea)
+            nivel = 3
+            children_n3 = re.search(regex_childrens_n3, linea)
+            if children_n3.group("md") == "README.md":
+                ruta = "/"
+            else:
+                ruta = children_n3.group("md")
+            titulo2 = children_n3.group("titulo")
+            subtitulos_n3.append('["' + ruta + '","' + titulo2 + '"]')
+            print(">>> subtitulos_n3: " + ",\n".join(subtitulos_n3))
+            continue
+    # Comprobamos si queda algo pendiente por agregar al resultado:
+    if len(subtitulos_n3) > 0:
+        seccion_n3 = seccion_sin_titulo
+        childrens = ",\n".join(subtitulos_n3)
+        seccion_n3 = re.sub('childrens', childrens, seccion_n3)
+        subtitulos_n2.append(seccion_n3)
+    if len(subtitulos_n2) > 0:
+        seccion_n2 = seccion_sin_titulo
+        childrens = ",\n".join(subtitulos_n2)
+        seccion_n2 = re.sub('childrens', childrens, seccion_n2)
+        subtitulos.append(seccion_n2)
+    if len(subtitulos) > 0:
+        resultado_subtitulos += ",\n".join(subtitulos)
+    return resultado_subtitulos
+
+
+# Analizamos la parte2 para ver cuantos títulos e hijos, y subhijos tienen:
+# Buscamos títulos de nivel 2 en adelante => #{2,} titulo nivel 2,3,4,...
+regex_titles_n2 = '#{2,}\s+[^#]*'
+titles_n2 = re.findall(regex_titles_n2, parte2)
+for title_n2 in titles_n2:
+    # Extraemos el nombre del título:
+    regex_title = '#+\s+(?P<titulo>[^\n]*)(?P<subtitulos>(\s|.)*)'
+    childrens = ""
+    if re.search(regex_title, title_n2):
+        titulo1 = re.search(regex_title, title_n2)
+        print("titulo n2: " + titulo1.group("titulo"))
+        print("subtitulos n2: " + titulo1.group("subtitulos"))
+        childrens = buscar_childrens_n1(titulo1.group("subtitulos"))
+    else:
+        print("No se encuentra ningún titulo en la parte2")
+    seccion_parte2 = seccion
+    seccion_parte2 = re.sub('titulo1', titulo1.group("titulo"), seccion_parte2)
+    seccion_parte2 = re.sub('childrens', childrens, seccion_parte2)
+    resultado += ",\n" + seccion_parte2
+
+resultado = '''sidebar: {
+    "/": [''' + resultado + ''']
+},'''
 
 ruta_destino = os.path.dirname(summary_file) + "/config.sidebar.json"
-destino = open(ruta_destino, "w")
+destino = open(ruta_destino, "w+")
 n = destino.write(resultado)
 destino.close()
 
+print("=> El resultado final es: \n" + resultado)
 os._exit(0)

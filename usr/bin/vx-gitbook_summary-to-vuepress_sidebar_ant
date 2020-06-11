@@ -1,0 +1,125 @@
+#!/usr/bin/python3
+# lastact: 2020-6-5
+# desc: Genera el sidebar del config.js de Vuepress a partir
+import re
+import os
+import sys
+
+
+def salir_error(otro_texto):
+    texto = "¡¡Error!! El script requiere al menos 1 parámetros:\n"
+    texto += "1) La ruta del fichero SUMMARY.md del cual generar el sidebar del config.js de Vuepress\n"
+    texto += "Ej. vx-gitbook_summary-to-vuepress_sidebar '<ruta_summary.md>'"
+    texto += "El sidebar resultante se guardará en '<config.sidebar.json>' junto a '<summary.md>'"
+    if (otro_texto != ""):
+        texto += "\n" + otro_texto
+    print(texto)
+    os._exit(1)
+
+
+# En el número de argumentos hay que tener en cuenta que sys.argv[0] es el nombre del script:
+try:
+    if len(sys.argv) < 1:
+        salir_error("")
+except:
+    salir_error("")
+
+summary_file = sys.argv[1]
+try:
+    fichero = open(summary_file)
+    contenido = fichero.read()
+    fichero.close()
+except:
+    mensaje = "=> El archivo indicado como parámetro no existe: " + summary_file
+    salir_error(mensaje)
+    os._exit(1)
+
+# Comprobamos si hay separardores en el summary.md: "___" => "## Otros"
+regex = '\n___'
+sustitucion = "## Otros ..."
+contenido = re.sub(regex, sustitucion, contenido)
+
+# Eliminamos líneas en blanco:
+# with open('path/to/file') as infile, open('output.txt', 'w') as outfile:
+#     for line in infile:
+#         if not line.strip():
+#             continue  # skip the empty line
+#         outfile.write(line)
+lista = ['^\s*\n:', '\n\s*\n:\n', '\n\s*$:']
+for operacion in lista:
+    regex = operacion.split(":")[0]
+    sustitucion = operacion.split(":")[1]
+    contenido = re.sub(regex, sustitucion, contenido)
+# print(contenido)
+# print("--- Terminado ---")
+# os._exit(0)
+regex = '#+[^#]*'
+# trozos = re.split(regex, contenido)
+trozos = re.findall(regex, contenido)
+ntrozos = len(trozos)
+
+for ntrozo in range(0, ntrozos):
+    encontrado = False
+    regex = ' +\* +\[.*?\]\(.*?\)'
+    trozos2 = re.findall(regex, trozos[ntrozo])
+    ntrozos2 = len(trozos2)
+    for ntrozo2 in range(0, ntrozos2):
+        regex = ' +\* +\[(.*?)\]\(.*?\)'
+        titulo_search = re.search(regex, trozos2[ntrozo2])
+        regex = ' +\* +\[.*?\]\((.*?)\)'
+        ruta_search = re.search(regex, trozos2[ntrozo2])
+        if titulo_search and ruta_search:
+            titulo = titulo_search.group(1)
+            ruta = ruta_search.group(1)
+            encontrado = True
+        if encontrado:
+            regex = ' +\* +\[' + titulo + '\]\(' + ruta + '\)'
+            sustitucion = '---[\"' + ruta + '\",\"' + titulo + '\"],---'
+            trozos[ntrozo] = re.sub(regex, sustitucion, trozos[ntrozo])
+        else:
+            sustitucion = ';;;'
+        # trozos2[ntrozo2] = re.sub(regex, sustitucion, trozos2[ntrozo2])
+
+# for trozo in trozos:
+#     print("=> " + trozo)
+# Convertimos la lista de trozos en una cadena y la mostramos:
+resultado = ''.join(trozos)
+regex = ',---\n---'
+sustitucion = ',\n'
+resultado = re.sub(regex, sustitucion, resultado)
+regex = '---(?P<trozo>\[(.|\n)*?\]),---'
+sustitucion = '{\n\ttitle: "",\n\tcollapsable: false,\n\tchildren: [\n\t\t\g<1>\n\t]\n},'
+resultado = re.sub(regex, sustitucion, resultado)
+
+# Titulos de primer nivel:
+regex = '\n\* *\[(.*?)\]\((.*?)\)'
+sustitucion = '\n[\"\g<2>\",\"\g<1>\"],'
+resultado = re.sub(regex, sustitucion, resultado)
+
+# Terminamos con los títulos principales:
+# regex = '# *[Ss][Uu][Mm][Mm][Aa][Rr][Yy]\s*?(.*?)##'
+regex = '# *[Ss][Uu][Mm][Mm][Aa][Rr][Yy]\s*([^#]*)'
+sustitucion = '{\n\ttitle: "Índice de Contenidos",\n\tcollapsable: false,\n\tsidebarDepth: 0,\n\tchildren: [\n\t\t\g<1>\t]\n},\n'
+resultado = re.sub(regex, sustitucion, resultado)
+regex = 'README'
+sustitucion = '/'
+resultado = re.sub(regex, sustitucion, resultado)
+regex = '\.md'
+sustitucion = ''
+resultado = re.sub(regex, sustitucion, resultado)
+
+regex = '##\s+(.*?)\n+?([^#]*)'
+sustitucion = '{\n\ttitle: "\g<1>",\n\tcollapsable: false,\n\tchildren: [\n\t\t\g<2>\t]\n},\n'
+# sustitucion = '---\g<2>---'
+resultado = re.sub(regex, sustitucion, resultado)
+resultado = 'sidebar: { "/": [\n' + resultado + '\n]\n},'
+print("\n--- Sidebar generado a partir de SUMMARY.md ---")
+print(resultado)
+print("--- Final del Sidebar generado a partir de SUMMARY.md ---\n")
+
+ruta_destino = os.path.dirname(summary_file) + "/config.sidebar.json"
+destino = open(ruta_destino, "w")
+n = destino.write(resultado)
+destino.close()
+
+os._exit(0)

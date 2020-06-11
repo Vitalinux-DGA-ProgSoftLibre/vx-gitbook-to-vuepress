@@ -1,6 +1,13 @@
+vx-gitbook-to-vuepress (1.0-2) unstable; urgency=low
+
+  * Modificamos el script /usr/bin/vx-gitbook_summary-to-vuepress_sidebar
+  * Rehacemos el script encargado de crear el sidebar de Vuepress a partir del SUMMARY.md
+
+ -- Arturo Martín <amartinromero@gmail.com>  Thu, 4 Jun 2020 00:10:00 +0200
+
 vx-gitbook-to-vuepress (1.0-1) unstable; urgency=low
 
   * Paquete encargado de pasar los cursos de GitBook de Catedu a Vuepress
-  * Añadido vx-gitbook-vuepress
+  * Añadido vx-gitbook-to-vuepress y el resto de scripts necesarios
 
  -- Arturo Martín <amartinromero@gmail.com>  Thu, 4 Jun 2020 00:10:00 +0200
