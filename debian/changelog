@@ -3,10 +3,11 @@ vx-gitbook-to-vuepress (1.0-2) unstable; urgency=low
   * Modificamos el script vx-gitbook_summary-to-vuepress_sidebar para mejorar su comportamiento
   * Rehacemos el script encargado de crear el sidebar de Vuepress a partir del SUMMARY.md
   * Añadimos la dependencia con librsvg2-bin para que pandoc convierta las imagenes SVG a PDF
+  * Modificamos vx-gitbook_summary-to-vuepress_config para evitar conflictos con index.md
   * Corregimos el script vx-gitbook-rutas_imagenes-webpack:
+  * Tener el cuenta el Tooltip de las imagenes al hacer la conversión de rutas
   * Para coger correctamente la ruta
   * Comprobamos si la extensión de las imagenes esta en minúsculas para evitar problemas con Webpack
-  * Modificamos vx-gitbook_summary-to-vuepress_config para evitar conflictos con index.md
 
  -- Arturo Martín <amartinromero@gmail.com>  Thu, 4 Jun 2020 00:10:00 +0200
 
