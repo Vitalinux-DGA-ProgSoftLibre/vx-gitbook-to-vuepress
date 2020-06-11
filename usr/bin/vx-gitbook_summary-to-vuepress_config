@@ -13,12 +13,24 @@ vx-gitbook_summary-to-vuepress_config \"<DIR_BASE_GITBOOK>\"
 [ -z "${1}" ] && uso && exit 1
 TEXTO="¡¡Error!! \"${1}\" no es un directorio existente ..."
 [[ ! -d "${1}" ]] && uso "${TEXTO}" && exit 2
-# 1) Comprobamos que DIR_BASE_GITBOOK contiene un SUMMARY.md y un book.json:
+# 0) Comprobamos que DIR_BASE_GITBOOK contiene un SUMMARY.md y un book.json:
 DIR_BASE_GITBOOK="${1}"
 SUMMARY="${DIR_BASE_GITBOOK}/SUMMARY.md"
 BOOKJSON="${DIR_BASE_GITBOOK}/book.json"
 TEXTO="¡¡No parace un repo de GitBook!! Debe existir un ${SUMMARY} y un ${BOOKJSON} ..."
 ! [[ -f "${SUMMARY}" && -f "${BOOKJSON}" ]] && uso "${TEXTO}" && exit 3
+
+# 3) Comprobamos si existe algún index.md que cree conflicto con README.md:
+# => Deberemos renombrar el archivo: index.md => index_anterior.md
+# => Deberemos cambiarlo en el SUMMARY.md: index.md => index_anterior.md
+FICHEROS=( "index.md" "Index.md" "INDEX.md")
+NEWFICHERO="index_anterior.md"
+for FICHERO in "${FICHEROS[@]}" ; do
+    [ -f "${DIR_BASE_GITBOOK}/${FICHERO}" ] && {
+        mv "${DIR_BASE_GITBOOK}/${FICHERO}" "${DIR_BASE_GITBOOK}/${NEWFICHERO}" && \
+        sed -i "s#[Ii][Nn][Dd][Ee][Xx]\.md#${NEWFICHERO}#g" "${SUMMARY}"
+    }
+done
 
 # 2) Obtenemos datos del book.json:
 GITHUBOWNER="$(jq -r '.pluginsConfig.githubcontributors.githubOwner' "${BOOKJSON}")"

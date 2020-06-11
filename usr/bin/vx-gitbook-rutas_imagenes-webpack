@@ -40,16 +40,31 @@ for ELE in "${LISTADO[@]}" ; do
     TEXTO_ALTERNATIVO="$(echo "${ELE#*:}" | sed -e 's#.*\!\[\([^]]*\)\](\([^)]*\)).*#\1#')"
     echo "=> TEXTO_ALTERNATIVO: \"${TEXTO_ALTERNATIVO}\""
     # Rescatamos la ruta de la imagen que se encuentra entre ():
-    RUTA_IMAGEN="$(echo "${ELE#*:}" | sed -e 's#.*\!\[\([^]]*\)\](\([^)]*\)).*#\2#')"
+    RUTA_IMAGEN_CON_TOOLTIP="$(echo "${ELE#*:}" | sed -e 's#.*\!\[\([^]]*\)\](\([^)]*\)).*#\2#')"
+    # En imagenes del tipo: ![balance](img/balanza.png "Balanza")
+    # La RUTA_IMAGEN_CON_TOOLTIP será: img/balanza.png "Balanza"
+    RUTA_IMAGEN="${RUTA_IMAGEN_CON_TOOLTIP// */}" # => img/balanza.png
+    TOOLTIP="${RUTA_IMAGEN_CON_TOOLTIP//* /}" # => "Balanza" (Texto al poner el ratón encima)
     echo "=> RUTA_IMAGEN: \"${RUTA_IMAGEN}\""
     # Comprobamos que la ruta no es de una URL de un servicio externo: https:// ftp:// mailto:// ...
     if [[ -f "${FICH}" && ! "${RUTA_IMAGEN}" =~ :// ]] ; then
         if [ -f "${DIR_BASE_GITBOOK}/${RUTA_IMAGEN}" ] ; then
+            # Comprobamos si la extensión esta en minúsculas para evitar problemas con Webpack:
+            EXTENSION="${RUTA_IMAGEN##*.}"
+            RUTA_IMAGEN_SIN_EXTENSION="${RUTA_IMAGEN%.*}"
             DIRBASE="$(dirname "${RUTA_IMAGEN##/}")"
-            IMAGEN="$(basename "${RUTA_IMAGEN}")"
-            SUSTITUCION="![${TEXTO_ALTERNATIVO}](~@${DIRBASE}/${IMAGEN})"
+            if echo "${EXTENSION}" | grep -qE "[A-Z]" ; then
+                # Cambiamos el nombre de la imagen pasándola a minúsculas:
+                EXTENSION="$(echo "${EXTENSION}" | tr '[:upper:]' '[:lower:]')"
+                RUTA_IMAGEN_NEW="${RUTA_IMAGEN_SIN_EXTENSION}.${EXTENSION}"
+                mv "${DIR_BASE_GITBOOK}/${RUTA_IMAGEN}" "${DIR_BASE_GITBOOK}/${RUTA_IMAGEN_NEW}"
+                IMAGEN="$(basename "${RUTA_IMAGEN_NEW}")"
+            else
+                IMAGEN="$(basename "${RUTA_IMAGEN}")"
+            fi
+            SUSTITUCION="![${TEXTO_ALTERNATIVO}](~@${DIRBASE}/${IMAGEN} ${TOOLTIP})"
             # REGEX='\!\[${TEXTO_ALTERNATIVO}\](${RUTA_IMAGEN})'
-            sed -i "s;\!\[${TEXTO_ALTERNATIVO}\](${RUTA_IMAGEN});${SUSTITUCION};g" "${FICH}" && \
+            sed -i "s;\!\[${TEXTO_ALTERNATIVO}\](${RUTA_IMAGEN}[^)]*);${SUSTITUCION};g" "${FICH}" && \
             {
                 echo "=> Ruta IMAGEN Corregida: ${FICH} => \"${MARKDOWNIMG}\" : \"${SUSTITUCION}\"" ;
             } || \

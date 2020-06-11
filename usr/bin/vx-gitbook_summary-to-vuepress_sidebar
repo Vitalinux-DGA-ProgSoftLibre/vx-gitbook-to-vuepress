@@ -34,6 +34,11 @@ except:
     salir_error(mensaje)
     os._exit(1)
 
+# 0) Escapamos las posibles dobles comillas que se hayan haber podido usar en SUMMARY.md:
+# Esto es debido a que los campos de config.js estan encerrados entre comillas dobles, por
+# lo que su contenido no puede contenerlas
+contenido = contenido.replace('"', "'")
+
 # 1) Eliminamos los separadores del sidebar de GitBook en el SUMMARY.md: "___":
 # sustitucion = "## Otros ..."
 sustitucion = '\n'
