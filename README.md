@@ -16,7 +16,7 @@ To install it you must previously download the DEB package that you will find [h
 
 ```bash
 PAQUETE="vx-gitbook-to-vuepress_1.0-2_all.deb"
-DESTINO="~/Descargas"
+DESTINO="/tmp"
 URL="http://migasfree.educa.aragon.es/repo/VX-18.04/STORES/base/${PAQUETE}"
 wget "${URL}" -P "${DESTINO}"
 sudo apt install "${DESTINO}/${PAQUETE}"
