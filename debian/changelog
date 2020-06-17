@@ -1,3 +1,12 @@
+vx-gitbook-to-vuepress (1.0-3) unstable; urgency=low
+
+  * Modificamos scripts para tener en cuenta el plugin de GitBook de Youtube
+  * Modificamos chainWebpack docs/.vuepress/config.js para adecuar plugin de GitBook de Youtube
+  * Modificamos vx-vuepress-to-pdf para hacer una llamada a vx-vuepress-to-pdf-plugin_youtube_to_image
+  * Añadimos vx-vuepress-to-pdf-plugin_youtube_to_image para pasar referencias youtube a thumbnail
+
+ -- Arturo Martín <amartinromero@gmail.com>  Tue, 16 Jun 2020 00:10:00 +0200
+
 vx-gitbook-to-vuepress (1.0-2) unstable; urgency=low
 
   * Modificamos el script vx-gitbook_summary-to-vuepress_sidebar para mejorar su comportamiento

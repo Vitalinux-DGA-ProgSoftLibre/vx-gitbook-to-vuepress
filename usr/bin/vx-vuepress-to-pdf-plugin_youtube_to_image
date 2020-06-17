@@ -1,0 +1,64 @@
+#!/usr/bin/python3
+# lastact: 2020-6-17
+# desc: Convierte referencias de videos de youtube a un thumbnail, con el formato:
+# https://img.youtube.com/vi/Xk6TCoz3nUQ/sddefault.jpg
+import re
+import os
+import sys
+
+
+def salir_error(otro_texto):
+    texto = "¡¡Error!! El script requiere al menos 1 parámetro:\n"
+    texto += "1) La ruta del fichero markdown donde buscar referencias a youtube\n"
+    texto += "Ej. vx-vuepress-to-pdf-plugin_youtube_to_image '<ruta_fichero.md>'"
+    if (otro_texto != ""):
+        texto += "\n" + otro_texto
+    print(texto)
+    os._exit(1)
+
+
+# En el número de argumentos hay que tener en cuenta que sys.argv[0] es el nombre del script:
+try:
+    if len(sys.argv) < 2:
+        salir_error("")
+except:
+    salir_error("")
+
+markdown_file = sys.argv[1]
+try:
+    fichero = open(markdown_file)
+    contenido = fichero.read()
+    fichero.close()
+except:
+    mensaje = "=> El archivo indicado como parámetro no existe: " + markdown_file
+    salir_error(mensaje)
+    os._exit(1)
+
+
+regex_plugin_youtube = '{% *youtube *%}([^{]*){% *endyoutube *%}'
+encuentros = re.findall(regex_plugin_youtube, contenido)
+print("=> Número de vídeos de youtube encontrados: " + str(len(encuentros)))
+for encuentro in encuentros:
+    # Comprobamos si el grupo 2 <md> es "README.md", al asociarse la root a él:
+    video_youtube = os.path.basename(encuentro)
+    # print("=> Vídeo de youtube: " + encuentro + ":" + video_youtube)
+    url_thumbnail_youtube = "https://img.youtube.com/vi/" + \
+        video_youtube + "/sddefault.jpg"
+    # sustitucion = "![" + url_thumbnail_youtube + \
+    #     "](" + url_thumbnail_youtube + ")"
+    sustitucion = """<figure class="figure">
+  <img src='""" + url_thumbnail_youtube + """' 
+  class="figure-img img-fluid rounded" alt="Thumbnail de Video de Youtube">
+  <figcaption class="figure-caption">Vídeo de Youtube: """ + encuentro + """</figcaption>
+  </figure>"""
+    # print("=> Valor de Sustitutución: " + sustitucion)
+    regex_youtube_video = '{% *youtube *%}' + \
+        encuentro + '{% *endyoutube *%}'
+    contenido = re.sub(regex_youtube_video, sustitucion, contenido)
+
+destino = open(markdown_file, "w+")
+n = destino.write(contenido)
+destino.close()
+
+# print("=> El resultado final es: \n" + contenido)
+os._exit(0)

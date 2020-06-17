@@ -44,8 +44,14 @@ for ELE in "${LISTADO[@]}" ; do
     # En imagenes del tipo: ![balance](img/balanza.png "Balanza")
     # La RUTA_IMAGEN_CON_TOOLTIP será: img/balanza.png "Balanza"
     RUTA_IMAGEN="${RUTA_IMAGEN_CON_TOOLTIP// */}" # => img/balanza.png
-    TOOLTIP="${RUTA_IMAGEN_CON_TOOLTIP//* /}" # => "Balanza" (Texto al poner el ratón encima)
     echo "=> RUTA_IMAGEN: \"${RUTA_IMAGEN}\""
+    # Comprobamos si la ruta tiene tooltip (debe haber al menos un espacio en blanco):
+    REGEX='[[:space:]]+'
+    if [[ "${RUTA_IMAGEN_CON_TOOLTIP}" =~ $REGEX ]] ; then
+        TOOLTIP="${RUTA_IMAGEN_CON_TOOLTIP//* /}" # => "Balanza" (Texto al poner el ratón encima)
+    else
+        TOOLTIP=""
+    fi
     # Comprobamos que la ruta no es de una URL de un servicio externo: https:// ftp:// mailto:// ...
     if [[ -f "${FICH}" && ! "${RUTA_IMAGEN}" =~ :// ]] ; then
         if [ -f "${DIR_BASE_GITBOOK}/${RUTA_IMAGEN}" ] ; then
@@ -62,6 +68,9 @@ for ELE in "${LISTADO[@]}" ; do
             else
                 IMAGEN="$(basename "${RUTA_IMAGEN}")"
             fi
+            # Para el valor de sustitución miraremos si hay o no Tooltip:
+            [[ -z "${TOOLTIP}" ]] && \
+            SUSTITUCION="![${TEXTO_ALTERNATIVO}](~@${DIRBASE}/${IMAGEN})" || \
             SUSTITUCION="![${TEXTO_ALTERNATIVO}](~@${DIRBASE}/${IMAGEN} ${TOOLTIP})"
             # REGEX='\!\[${TEXTO_ALTERNATIVO}\](${RUTA_IMAGEN})'
             sed -i "s;\!\[${TEXTO_ALTERNATIVO}\](${RUTA_IMAGEN}[^)]*);${SUSTITUCION};g" "${FICH}" && \

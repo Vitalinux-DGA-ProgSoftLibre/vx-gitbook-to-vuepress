@@ -112,6 +112,13 @@ fi
 # "![${TEXTO_ALTERNATIVO}](~@${DIRBASE}/${IMAGEN})"
 sed -i "s#\(.*\!\[[^]]*\](\)~@\(.*\)#\1../$(basename "${DIRBASE}")/\2#g" "${RESULTANTE}"
 
+# Convertimos los videos de youtube a una imagen:
+# https://stackoverflow.com/questions/2068344/how-do-i-get-a-youtube-video-thumbnail-from-the-youtube-api
+# https://img.youtube.com/vi/Xk6TCoz3nUQ/sddefault.jpg
+# sed -i "s/{% *youtube *%}\([^{]*\){% *endyoutube *%}/\1/g" "${RESULTANTE}"
+vx-vuepress-to-pdf-plugin_youtube_to_image "${RESULTANTE}"
+
+
 echo "=> Terminado el Markdown Total: ${RESULTANTE}"
 
 # Una vez concatenados los archivos markdown los convertimos en html y pdf:

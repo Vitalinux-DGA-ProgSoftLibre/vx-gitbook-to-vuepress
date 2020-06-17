@@ -33,15 +33,13 @@ module.exports = {
     editLinks: false,
     editLinkText: "Editar esta página en Github",
     // Barra de navegación superior:
-    nav: [
-      {
+    nav: [{
         text: "Inicio",
         link: "/",
       },
       {
         text: "Enlaces",
-        items: [
-          {
+        items: [{
             text: "Soporte",
             link: "https://soporte.vitalinux.educa.aragon.es",
           },
@@ -105,7 +103,14 @@ module.exports = {
       .use("string-replace-loader")
       .loader("string-replace-loader")
       .options({
-        multiple: [
+        multiple: [{
+            // https://vuepress-examples.netlify.app/demos/video/
+            search: "{% *youtube *%}([^{]*){% *endyoutube *%}",
+            replace: (match, p1, offset, string, groups) =>
+              `<iframe width="560" height="315" src="https://www.youtube.com/embed/${path.basename(p1)}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`,
+            // replace: <iframe width="560" height="315" src="https://www.youtube.com/embed/bTqVqk7FSmY" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            flags: "ig"
+          },
           {
             search: "---(.*?)---",
             replace: (match, p1, offset, string, groups) =>
