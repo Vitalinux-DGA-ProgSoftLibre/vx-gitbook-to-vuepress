@@ -1,7 +1,14 @@
 #!/usr/bin/python3
 # lastact: 2020-6-17
 # desc: Convierte referencias de videos de youtube a un thumbnail, con el formato:
+# https: // stackoverflow.com/questions/2068344/how-do-i-get-a-youtube-video-thumbnail-from-the-youtube-api
+# https://img.youtube.com/vi/<insert-youtube-video-id-here>/{0,1,2,...}.jpg
+# https://img.youtube.com/vi/<insert-youtube-video-id-here>/default.jpg
+# https://img.youtube.com/vi/<insert-youtube-video-id-here>/hqdefault.jpg
+# https://img.youtube.com/vi/<insert-youtube-video-id-here>/mqdefault.jpg
+# https://img.youtube.com/vi/<insert-youtube-video-id-here>/maxresdefault.jpg
 # https://img.youtube.com/vi/Xk6TCoz3nUQ/sddefault.jpg
+
 import re
 import os
 import sys
@@ -39,7 +46,6 @@ regex_plugin_youtube = '{% *youtube *%}([^{]*){% *endyoutube *%}'
 encuentros = re.findall(regex_plugin_youtube, contenido)
 print("=> Número de vídeos de youtube encontrados: " + str(len(encuentros)))
 for encuentro in encuentros:
-    # Comprobamos si el grupo 2 <md> es "README.md", al asociarse la root a él:
     video_youtube = os.path.basename(encuentro)
     # print("=> Vídeo de youtube: " + encuentro + ":" + video_youtube)
     url_thumbnail_youtube = "https://img.youtube.com/vi/" + \
